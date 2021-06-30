@@ -113,11 +113,7 @@ import org.fenixedu.academic.service.services.teacher.CreateSummary;
 import org.fenixedu.academic.service.services.teacher.DeleteSummary;
 import org.fenixedu.academic.ui.spring.controller.PhotographController;
 import org.fenixedu.academic.ui.struts.action.ICalendarSyncPoint;
-import org.fenixedu.academic.util.Bundle;
-import org.fenixedu.academic.util.ContentType;
-import org.fenixedu.academic.util.EvaluationType;
-import org.fenixedu.academic.util.HourMinuteSecond;
-import org.fenixedu.academic.util.Money;
+import org.fenixedu.academic.util.*;
 import org.fenixedu.bennu.core.domain.Avatar;
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.bennu.core.domain.User;
@@ -1463,8 +1459,12 @@ public class FenixAPIv1 {
                 .forEach(plan -> addCurricularCourses(plan.getRoot(), curricularCourses, executionSemesters));
 
         return curricularCourses.stream().map(cc -> {
+            DegreeModule module = (DegreeModule) cc;
+            org.fenixedu.academic.domain.degreeStructure.Context context = module.getParentContextsByExecutionYear(executionYear).get(0);
             JsonObject object = new JsonObject();
             object.addProperty("id", cc.getExternalId());
+            object.addProperty("acronym", cc.getAcronym());
+            object.addProperty("curricularPeriod", CurricularPeriodLabelFormatter.getFullLabel(context.getCurricularPeriod(), context.getTerm(), false));
             object.addProperty("name", cc.getName());
             return object;
         }).collect(StreamUtils.toJsonArray()).toString();
