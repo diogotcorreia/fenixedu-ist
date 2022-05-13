@@ -52,11 +52,13 @@ public class DelegateCycleStudentGroupBean extends DelegateStudentGroupBean {
 
     @Override
     public String serialize() {
-        return new StringJoiner(":")
-                .add("cycleOrDegree")
-                .add(degree.getExternalId())
-                .add(cycle.toString())
-                .add(year.getExternalId())
+        StringJoiner joiner = new StringJoiner(":")
+                .add(this.cycle != null ? "cycle" : "degree")
+                .add(degree.getExternalId());
+        if (this.cycle != null) {
+            joiner.add(cycle.toString());
+        }
+        return joiner.add(year.getExternalId())
                 .toString();
     }
 

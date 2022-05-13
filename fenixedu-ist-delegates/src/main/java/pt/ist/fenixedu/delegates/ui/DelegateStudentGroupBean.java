@@ -15,7 +15,7 @@ public abstract class DelegateStudentGroupBean {
     public static DelegateStudentGroupBean deserialize(String source) {
         String[] sourceStr = source.split(":");
 
-        if (sourceStr[0].equals("curricularYear")) {
+        if (sourceStr[0].equals("year")) {
             if (sourceStr.length < 4) {
                 return null;
             }
@@ -24,7 +24,7 @@ public abstract class DelegateStudentGroupBean {
                     FenixFramework.getDomainObject(sourceStr[2]),
                     FenixFramework.getDomainObject(sourceStr[3])
             );
-        } else if (sourceStr[0].equals("cycleOrDegree")) {
+        } else if (sourceStr[0].equals("cycle")) {
             if (sourceStr.length < 4) {
                 return null;
             }
@@ -32,6 +32,15 @@ public abstract class DelegateStudentGroupBean {
                     FenixFramework.getDomainObject(sourceStr[1]),
                     CycleType.valueOf(sourceStr[2]),
                     FenixFramework.getDomainObject(sourceStr[3])
+            );
+        } else if (sourceStr[0].equals("degree")) {
+            if (sourceStr.length < 3) {
+                return null;
+            }
+            return new DelegateCycleStudentGroupBean(
+                    FenixFramework.getDomainObject(sourceStr[1]),
+                    null,
+                    FenixFramework.getDomainObject(sourceStr[2])
             );
         }
 

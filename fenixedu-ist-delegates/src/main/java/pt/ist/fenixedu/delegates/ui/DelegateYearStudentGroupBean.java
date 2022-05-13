@@ -48,7 +48,7 @@ public class DelegateYearStudentGroupBean extends DelegateStudentGroupBean {
     @Override
     public String serialize() {
         return new StringJoiner(":")
-                .add("curricularYear")
+                .add("year")
                 .add(degree.getExternalId())
                 .add(curricularYear.getExternalId())
                 .add(year.getExternalId())
