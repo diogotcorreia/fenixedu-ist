@@ -18,19 +18,20 @@
  */
 package pt.ist.fenixedu.delegates.domain.student;
 
-import org.fenixedu.academic.domain.CurricularCourse;
+import org.fenixedu.academic.domain.CurricularYear;
 import org.fenixedu.academic.domain.Degree;
-import org.fenixedu.academic.domain.DegreeCurricularPlan;
 import org.fenixedu.academic.domain.ExecutionCourse;
-import org.fenixedu.academic.domain.ExecutionSemester;
 import org.fenixedu.academic.domain.ExecutionYear;
-import org.fenixedu.academic.domain.accessControl.StudentGroup;
+import org.fenixedu.academic.domain.degree.DegreeType;
 import org.fenixedu.academic.domain.degreeStructure.CycleType;
 import org.fenixedu.bennu.core.domain.User;
 import org.fenixedu.bennu.core.i18n.BundleUtil;
 import pt.ist.fenixedu.delegates.domain.accessControl.DelegateGroup;
 import pt.ist.fenixedu.delegates.domain.util.email.DelegateSender;
 import pt.ist.fenixedu.delegates.ui.DelegateBean;
+import pt.ist.fenixedu.delegates.ui.DelegateCycleStudentGroupBean;
+import pt.ist.fenixedu.delegates.ui.DelegateStudentGroupBean;
+import pt.ist.fenixedu.delegates.ui.DelegateYearStudentGroupBean;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,11 +95,6 @@ public class CycleDelegate extends CycleDelegate_Base {
     }
 
     @Override
-    public Boolean isDegreeOrCycleDelegate() {
-        return true;
-    }
-
-    @Override
     public void setSender(DelegateSender sender) {
         super.setSender(sender);
         getSender().setMembers(getUser().groupOf());
@@ -106,17 +102,30 @@ public class CycleDelegate extends CycleDelegate_Base {
     }
 
     @Override
-    public Boolean isYearDelegate() {
-        return false;
-    }
-
-    @Override
     public CycleType getCycleType() {
         return getCycle();
     }
 
+    private List<CurricularYear> getCycleCurricularYears() {
+        DegreeType type = this.getDegree().getDegreeType();
+        List<CurricularYear> years = new ArrayList<>();
+        years.add(CurricularYear.readByYear(1));
+        years.add(CurricularYear.readByYear(2));
+        if ((type.isIntegratedMasterDegree() && this.getCycleType() == CycleType.FIRST_CYCLE) || type.isBolonhaDegree()) {
+            years.add(CurricularYear.readByYear(3));
+        }
+        return years;
+    }
+
     @Override
-    public StudentGroup getStudentGroupForExecutionYear(ExecutionYear year) {
-        return StudentGroup.get(null, this.getDegree(), this.getCycleType(), null, null, null, year);
+    public List<DelegateStudentGroupBean> getStudentGroups() {
+        List<DelegateStudentGroupBean> groups = new ArrayList<>();
+        for (ExecutionYear year: getMandateExecutionYears()) {
+            groups.add(new DelegateCycleStudentGroupBean(this.getDegree(), this.getCycleType(), year));
+            this.getCycleCurricularYears().stream()
+                    .map(curricularYear -> new DelegateYearStudentGroupBean(this.getDegree(), curricularYear, year))
+                    .forEach(groups::add);
+        }
+        return groups;
     }
 }

@@ -84,26 +84,12 @@
 						<div class="delegate-messaging-groups">
 							<div><spring:message code="delegates.messaging.bcc"/>:</div>
 							<div>
-								<c:if test="${yearStudents}">
-									<c:forEach var="execYear" items="${mandateYears}">
-										<div>
-											<form:checkbox value="${execYear.externalId}" path="selectedGroupsExecutionYears" />
-											<spring:message code="delegates.messaging.year.students">
-												<spring:argument>${execYear.name}</spring:argument>
-											</spring:message>
-										</div>
-									</c:forEach>
-								</c:if>
-								<c:if test="${degreeOrCycleStudents}">
-									<c:forEach var="execYear" items="${mandateYears}">
-										<div>
-											<form:checkbox  value="${execYear.externalId}" path="selectedGroupsExecutionYears" />
-											<spring:message code="delegates.messaging.degreeCycle.students">
-												<spring:argument>${execYear.name}</spring:argument>
-											</spring:message>
-										</div>
-									</c:forEach>
-								</c:if>
+								<c:forEach var="group" items="${studentGroups}">
+									<div>
+										<form:checkbox  value="${group.serialize()}" path="selectedStudentGroups" />
+										<c:out value="${group.name}"/>
+									</div>
+								</c:forEach>
 							</div>
 						</div>
 					</c:if>

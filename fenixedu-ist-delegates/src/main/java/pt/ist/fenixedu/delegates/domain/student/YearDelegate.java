@@ -18,18 +18,19 @@
  */
 package pt.ist.fenixedu.delegates.domain.student;
 
-import org.fenixedu.academic.domain.CurricularCourse;
 import org.fenixedu.academic.domain.CurricularYear;
 import org.fenixedu.academic.domain.Degree;
 import org.fenixedu.academic.domain.ExecutionCourse;
 import org.fenixedu.academic.domain.ExecutionYear;
-import org.fenixedu.academic.domain.accessControl.StudentGroup;
 import org.fenixedu.bennu.core.domain.User;
 import org.fenixedu.bennu.core.i18n.BundleUtil;
 import pt.ist.fenixedu.delegates.domain.accessControl.DelegateGroup;
 import pt.ist.fenixedu.delegates.domain.util.email.DelegateSender;
 import pt.ist.fenixedu.delegates.ui.DelegateBean;
+import pt.ist.fenixedu.delegates.ui.DelegateStudentGroupBean;
+import pt.ist.fenixedu.delegates.ui.DelegateYearStudentGroupBean;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -92,17 +93,11 @@ public class YearDelegate extends YearDelegate_Base {
     }
 
     @Override
-    public Boolean isDegreeOrCycleDelegate() {
-        return false;
-    }
-
-    @Override
-    public Boolean isYearDelegate() {
-        return true;
-    }
-
-    @Override
-    public StudentGroup getStudentGroupForExecutionYear(ExecutionYear year) {
-        return StudentGroup.get(this.getDegree(), this.getCurricularYear(), year);
+    public List<DelegateStudentGroupBean> getStudentGroups() {
+        List<DelegateStudentGroupBean> groups = new ArrayList<>();
+        for (ExecutionYear year: getMandateExecutionYears()) {
+            groups.add(new DelegateYearStudentGroupBean(this.getDegree(), this.getCurricularYear(), year));
+        }
+        return groups;
     }
 }

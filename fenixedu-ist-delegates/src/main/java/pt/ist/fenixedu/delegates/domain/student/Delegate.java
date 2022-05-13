@@ -28,6 +28,7 @@ import org.fenixedu.bennu.core.domain.Bennu;
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
 import pt.ist.fenixedu.delegates.ui.DelegateBean;
+import pt.ist.fenixedu.delegates.ui.DelegateStudentGroupBean;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -46,11 +47,7 @@ public abstract class Delegate extends Delegate_Base {
 
     public abstract List<ExecutionCourse> getDelegateExecutionCourses();
 
-    public abstract Boolean isDegreeOrCycleDelegate();
-
-    public abstract Boolean isYearDelegate();
-
-    public abstract StudentGroup getStudentGroupForExecutionYear(ExecutionYear year);
+    public abstract List<DelegateStudentGroupBean> getStudentGroups();
 
     public Boolean isActive() {
         return isActive(DateTime.now());

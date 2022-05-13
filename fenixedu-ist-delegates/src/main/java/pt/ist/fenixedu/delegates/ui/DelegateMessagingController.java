@@ -63,9 +63,7 @@ public class DelegateMessagingController {
             List<DelegateExecutionCourseBean> executionCourses = delegateService.getExecutionCourses(delegateStudentsBean.getSelectedPosition());
             model.addAttribute("executionCourses", executionCourses.stream().distinct().collect(Collectors.toList()));
         }
-        model.addAttribute("mandateYears", delegateStudentsBean.getSelectedPosition().getMandateExecutionYears());
-        model.addAttribute("yearStudents", delegateStudentsBean.getSelectedPosition().isYearDelegate());
-        model.addAttribute("degreeOrCycleStudents", delegateStudentsBean.getSelectedPosition().isDegreeOrCycleDelegate());
+        model.addAttribute("studentGroups", delegateStudentsBean.getSelectedPosition().getStudentGroups());
         model.addAttribute("responsibleTeachers", responsibleTeachers);
         model.addAttribute("action", "/delegates-messaging/messaging/");
         model.addAttribute("reload", "/delegates-messaging/messaging-reload/");
