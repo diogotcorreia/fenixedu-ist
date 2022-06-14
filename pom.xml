@@ -59,8 +59,8 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:git@github.com:ist-dsi/fenixedu-ist.git</connection>
-        <developerConnection>scm:git:git@github.com:ist-dsi/fenixedu-ist.git</developerConnection>
+        <connection>scm:git:git@repo.dsi.tecnico.ulisboa.pt:fenixedu/application/fenixedu-ist.git</connection>
+        <developerConnection>scm:git:git@repo.dsi.tecnico.ulisboa.pt:fenixedu/application/fenixedu-ist</developerConnection>
         <url>http://fenixedu.org</url>
         <tag>HEAD</tag>
     </scm>
