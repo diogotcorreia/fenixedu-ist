@@ -1,18 +1,18 @@
 /**
  * Copyright © 2013 Instituto Superior Técnico
- *
+ * <p>
  * This file is part of FenixEdu IST GIAF Invoices.
- *
+ * <p>
  * FenixEdu IST GIAF Invoices is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * FenixEdu IST GIAF Invoices is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU Lesser General Public License
  * along with FenixEdu IST GIAF Invoices.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -73,7 +73,7 @@ public class Utils {
     private static final String FCT_NIF = "503904040";
 
     public static boolean validate(final ErrorLogConsumer consumer,
-            final AccountingTransactionDetail detail) {
+                                   final AccountingTransactionDetail detail) {
         final AccountingTransaction transaction = detail.getTransaction();
         final Event event = transaction.getEvent();
         if (!validate(consumer, event)) {
@@ -243,31 +243,39 @@ public class Utils {
         return b.toString();
     }
 
-    public static PhysicalAddress toAddress(final Party party, final String countryCode) {
+    private static final Comparator<PhysicalAddress> ADDRESS_COMPARATOR = (a1, a2) -> {
+        boolean d1 = a1.getDefaultContact();
+        boolean d2 = a2.getDefaultContact();
+        boolean ac1 = a1.getActive();
+        boolean ac2 = a2.getActive();
+        // some addresses don't have an associated country and that is relevant for the postal codes
+        Country c1 = a1.getCountryOfResidence();
+        Country c2 = a2.getCountryOfResidence();
+        return (c1 != null && c2 == null) ? -1 :
+                (
+                        (c2 != null && c1 == null) ? 1 :
+                                (
+                                        (ac1 && !ac2) ? -1 : (ac2 && !ac1) ? 1 :
+                                                (
+                                                        (d1 && !d2) ? -1 : (d2 && !d1) ? 1 :
+                                                                a1.getExternalId().compareTo(a2.getExternalId())
+                                                )
+                                )
+                );
+    };
+
+    private static Stream<PhysicalAddress> addressStream(final Party party) {
         return party.getPartyContactsSet().stream()
-            .filter(pc -> pc instanceof PhysicalAddress)
-            .map(pc -> (PhysicalAddress) pc)
-            .sorted((a1, a2) -> {
-                boolean d1 = a1.getDefaultContact();
-                boolean d2 = a2.getDefaultContact();
-                boolean ac1 = a1.getActive();
-                boolean ac2 = a2.getActive();
-                    // some addresses don't have an associated country and that is relevant for the postal codes
-                Country c1 = a1.getCountryOfResidence();
-                Country c2 = a2.getCountryOfResidence();
-                    return (c1 != null && c2 == null) ? -1 : 
-                        (
-                          (c2 != null && c1 == null) ? 1 :
-                          (
-                              (ac1 && !ac2) ? -1 : (ac2 && !ac1) ? 1 : 
-                              (
-                                  (d1 && !d2) ? -1 : (d2 && !d1) ? 1 :
-                                  a1.getExternalId().compareTo(a2.getExternalId())
-                              )
-                          )
-                        );
-            })
-            .findFirst().orElse(null);
+                .filter(PhysicalAddress.class::isInstance)
+                .map(PhysicalAddress.class::cast)
+                .sorted(ADDRESS_COMPARATOR);
+    }
+
+    public static PhysicalAddress toAddress(final Party party, final String countryCode) {
+        return addressStream(party)
+                .filter(a -> a.getCountryOfResidence() != null && a.getCountryOfResidence().getCode().equals(countryCode))
+                .findFirst()
+                .orElseGet(() -> addressStream(party).findFirst().orElse(null));
     }
 
     private static String hackAreaCodePT(final String areaCode, final Country countryOfResidence) {
@@ -283,7 +291,7 @@ public class Utils {
     }
 
     private static void logError(final ErrorLogConsumer consumer, final String error, final Event event, final String user, final String vat, final Country country,
-            final Party party, final PhysicalAddress address, final Country countryOfAddress, final Event e) {
+                                 final Party party, final PhysicalAddress address, final Country countryOfAddress, final Event e) {
 
         if (consumer == null) {
             return;
@@ -291,7 +299,7 @@ public class Utils {
 
         BigDecimal amount = null;
         DebtCycleType cycleType = null;
-        
+
         try {
             cycleType = cycleType(e);
             amount = e.getOriginalAmountToPay().getAmount();
@@ -435,7 +443,7 @@ public class Utils {
     }
 
     public static void writeFileWithoutFailuer(final Path path, final byte[] content, final boolean append) {
-        for (int c = 0;; c++) {
+        for (int c = 0; ; c++) {
             try {
                 if (append) {
                     Files.write(path, content, StandardOpenOption.CREATE, StandardOpenOption.APPEND, StandardOpenOption.WRITE);
@@ -489,7 +497,7 @@ public class Utils {
         for (final Debt debt : calculator.getDebtsOrderedByDueDate()) {
             if ((debt.getDueDate().isBefore(today) && debt.getOpenAmount().signum() > 0)
                     || debt.getOpenFineAmount().signum() > 0
-                    || debt.getOpenInterestAmount().signum() > 0){
+                    || debt.getOpenInterestAmount().signum() > 0) {
                 return true;
             }
         }
