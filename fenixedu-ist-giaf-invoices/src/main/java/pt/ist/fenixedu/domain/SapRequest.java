@@ -344,6 +344,12 @@ public class SapRequest extends SapRequest_Base {
         return getValueAvailableForTransfer().isPositive();
     }
 
+    public boolean getIsAvailableForTransferBack() {
+        return getValueAvailableForTransfer().isPositive() &&
+                SapRoot.getInstance().getExternalClientSet().stream()
+                        .map(c -> c.getClientId()).anyMatch(s -> s.equals(getClientId()));
+    }
+
     public boolean getIsAvailableForTransfer() {
         return isAvailableForTransfer();
     }

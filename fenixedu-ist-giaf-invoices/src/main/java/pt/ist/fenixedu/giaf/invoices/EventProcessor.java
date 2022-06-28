@@ -123,12 +123,7 @@ public class EventProcessor {
     }
 
     private static Money closeAndReturnOpenValue(final SapEvent sapEvent, final SapRequest sr) {
-        final Money liquidated = sr.getEvent().getSapRequestSet().stream()
-                .filter(osr -> osr != sr)
-                .filter(osr -> osr.refersToDocument(sr.getDocumentNumber()))
-                .map(osr -> osr.getValue())
-                .reduce(Money.ZERO, Money::add);
-        final Money openValue = sr.getValue().subtract(liquidated);
+        final Money openValue = sr.openInvoiceValue();
         if (openValue.isPositive()) {
             sapEvent.closeDocument(sr);
         }

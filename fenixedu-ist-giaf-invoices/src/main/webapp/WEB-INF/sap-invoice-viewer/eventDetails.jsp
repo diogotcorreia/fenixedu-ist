@@ -17,6 +17,7 @@
 <div class="page-body">
     <c:set var="person" scope="request" value="${event.person}"/>
     <c:set var="error" scope="page" value="${error}"/>
+    <c:set var="exception" scope="page" value="${exception}"/>
     <jsp:include page="../fenixedu-academic/accounting/heading-person.jsp"/>
     <h2>
         <span style="color: gray;"><spring:message code="title.sap.invoice.viewer" text="SAP Documents"/></span>
@@ -131,6 +132,13 @@
                                         <a href="<%= contextPath %>/sap-invoice-viewer/${sapRequest.externalId}/transfer" class="btn btn-info">
                                             <spring:message code="label.transfer" text="Transfer"/>
                                         </a>
+                                    </c:if>
+                                    <c:if test="${sapRequest.isAvailableForTransferBack and sapRequest.requestType == 'INVOICE'}">
+                                        <form method="post" action="<%= contextPath %>/sap-invoice-viewer/${sapRequest.externalId}/transferInvoiceBackToOrigin" style="display: inline;"
+                                              onsubmit="return confirm('<spring:message code="label.transfer.to.student.confirm" text="Are you sure?"/>');">
+                                        ${csrf.field()}
+                                        <button type="submit" class="btn btn-info"><spring:message code="label.transfer.to.student" text="Transfer to Student"/></button>
+                                        </form>
                                     </c:if>
                                 </c:if>
                                 <c:if test="${isSapIntegrator}">
