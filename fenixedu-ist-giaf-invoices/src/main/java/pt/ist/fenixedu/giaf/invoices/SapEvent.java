@@ -163,9 +163,32 @@ public class SapEvent {
             if (clientId.equals(externalClient.getClientId())) { //the remainder it's being transferred from the external entity back to the user
                 clientId = ClientMap.uVATNumberFor(event.getParty());
             }
-            final JsonObject data = toJsonInvoice(event, remainder, getDocumentDate(event.getWhenOccured(), true), new DateTime(), clientId, false, false, false);
-            final String documentNumber = getDocumentNumber(data, false);
-            new SapRequest(event, clientId, remainder, documentNumber, SapRequestType.INVOICE, Money.ZERO, data);
+            registerInvoicePlain(remainder, clientId);
+        }
+    }
+
+    private void registerInvoicePlain(Money value, String clientId) {
+        final JsonObject data = toJsonInvoice(event, value, getDocumentDate(event.getWhenOccured(), true), new DateTime(), clientId, false, false, false);
+        final String documentNumber = getDocumentNumber(data, false);
+        new SapRequest(event, clientId, value, documentNumber, SapRequestType.INVOICE, Money.ZERO, data);
+    }
+
+    @Atomic
+    public void transferInvoiceBackToOrigin(final SapRequest sapRequest) {
+        final String clientId = ClientMap.uVATNumberFor(event.getParty());
+        final String sapRequestClientId = sapRequest.getClientId();
+        if (clientId.equals(sapRequestClientId)) {
+            throw new Error("label.error.cannot.be.transferred.back");
+        }
+        if (!SapRoot.getInstance().getExternalClientSet().stream().map(c -> c.getClientId()).anyMatch(s -> s.equals(sapRequestClientId))) {
+            throw new Error("label.error.cannot.be.transferred.back");
+        }
+        final Money openInvoiceValue = sapRequest.openInvoiceValue();
+        if (openInvoiceValue.isPositive()) {
+            closeDocument(sapRequest);
+            registerInvoice(openInvoiceValue, event.isGratuity(), true, null, null);
+        } else {
+            throw new Error("error.value.to.transfer.must.be.positive");
         }
     }
 
@@ -188,15 +211,18 @@ public class SapEvent {
             final Money openInvoiceValue = sapRequest.openInvoiceValue();
             final CreditEntry creditEntry = EventProcessor.getCreditEntry(openInvoiceValue);
             final SapRequest creditRequest = registerCredit(event, creditEntry, openInvoiceValue, sapRequest, false);
-            creditRequest.setIgnore(true);
+            //it only makes sense to ignore the requests if the entire value of the invoice was closed
             if (documentValue.equals(openInvoiceValue)) {
+                creditRequest.setIgnore(true);
                 sapRequest.setIgnore(true);
             }
             //only if the credit value is not equal to the original invoice value must we close the invoice
             //otherwise there is no need to send a closing document
             if (!sapRequest.getValue().equals(openInvoiceValue)) {
                 final SapRequest closeInvoice = registerFinalZeroPayment(sapRequest, null, null);
-                closeInvoice.setIgnore(true);
+                if (documentValue.equals(openInvoiceValue)) {
+                    closeInvoice.setIgnore(true);
+                }
             }
         } else if (requestType == SapRequestType.DEBT) {
             final CreditEntry creditEntry = EventProcessor.getCreditEntry(documentValue);
@@ -215,7 +241,8 @@ public class SapEvent {
                 && requestType != SapRequestType.PAYMENT_INTEREST
                 && requestType != SapRequestType.ADVANCEMENT
                 && requestType != SapRequestType.CREDIT
-                && requestType != SapRequestType.CLOSE_INVOICE) {
+                && requestType != SapRequestType.CLOSE_INVOICE
+                && requestType != SapRequestType.REIMBURSEMENT) {
             throw new Error("label.document.type.cannot.be.canceled");
         }
         if (sapRequest.isReferencedByOtherRequest()) {
@@ -304,9 +331,7 @@ public class SapEvent {
         sapRequest.setIgnore(true);
         creditRequest.setIgnore(true);
 
-        final JsonObject data = toJsonInvoice(event, invoiceValue, getDocumentDate(event.getWhenOccured(), true), new DateTime(), clientId, false, false, false);
-        final String documentNumber = getDocumentNumber(data, false);
-        new SapRequest(event, clientId, invoiceValue, documentNumber, SapRequestType.INVOICE, Money.ZERO, data);
+        registerInvoicePlain(invoiceValue, clientId);
     }
 
     public SapRequest registerDebt(Money debtFenix, Event event, boolean isNewDate) {

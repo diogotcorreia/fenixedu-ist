@@ -260,7 +260,7 @@ public class SapInvoiceController {
                     return prepareTransfer(sapRequest, model);
                 }
                 if (value.greaterThan(sapRequest.getValue())) {
-                    model.addAttribute("error", "error.value.to.transfer.cannot.exceed.invouce.value");
+                    model.addAttribute("error", "error.value.to.transfer.cannot.exceed.invoice.value");
                     return prepareTransfer(sapRequest, model);                
                 }
                 if (client == null) {
@@ -288,6 +288,20 @@ public class SapInvoiceController {
         }
         final String v = s.matches("-?\\d+(\\,\\d+)?") ? s.replace(',', '.') : s;
         return new Money(v);
+    }
+
+    @RequestMapping(value = "/{sapRequest}/transferInvoiceBackToOrigin", method = RequestMethod.POST)
+    public String transferInvoiceBackToOrigin(final @PathVariable SapRequest sapRequest, final Model model) {
+        if (Group.dynamic("managers").isMember(Authenticate.getUser()) || isAdvancedPaymentManager() ||
+                Group.dynamic("sapIntegrationManager").isMember(Authenticate.getUser())) {
+            final SapEvent sapEvent = new SapEvent(sapRequest.getEvent());
+            try {
+                sapEvent.transferInvoiceBackToOrigin(sapRequest);
+            } catch (final Exception | Error e) {
+                model.addAttribute("exception", e.getMessage());
+            }
+        }
+        return sapDocumentsRedirect(sapRequest.getEvent());
     }
 
     @RequestMapping(value = "/{sapRequest}/delete", method = RequestMethod.POST)
@@ -528,7 +542,7 @@ public class SapInvoiceController {
         result.addProperty("ignore", sapRequest.getIgnore());
         result.addProperty("referenced", sapRequest.getReferenced());
         result.addProperty("isAvailableForTransfer", sapRequest.isAvailableForTransfer());
-        result.addProperty("valuevalueAvailableForTransfer", sapRequest.getValue() == null ? null : sapRequest.getValue().subtract(sapRequest.consumedAmount()).toPlainString());
+        result.addProperty("valueAvailableForTransfer", sapRequest.getValue() == null ? null : sapRequest.getValue().subtract(sapRequest.consumedAmount()).toPlainString());
         return result;
     }
 
