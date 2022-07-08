@@ -1696,7 +1696,7 @@ public class SapEvent {
                                                                     boolean isDebtRegistration, boolean isInterest,
                                                                     boolean isAdvancement, boolean isPastEvent) {
 
-        if (isPastEvent || isGratuityCreatedAfterOpenYear(event)) {
+        if ((isPastEvent || isGratuityCreatedAfterOpenYear(event)) && hasInvoicePreviousYears(event)) {
             return new SimpleImmutableEntry<String, String>("0063", "REGULARIZAÇAO ANOS ANTERIORES");
         }
         if (isInterest) {
@@ -1834,6 +1834,16 @@ public class SapEvent {
             return new SimpleImmutableEntry<String, String>("0031", "TAXAS DE MATRICULA");
         }
         throw new Error("not.supported: " + event.getExternalId());
+    }
+
+    private static boolean hasInvoicePreviousYears(final Event event) {
+        return event.getSapRequestSet().stream()
+                .filter(sr -> !sr.getIgnore())
+                .filter(sr -> sr.getRequestType() == SapRequestType.INVOICE || sr.getRequestType() == SapRequestType.INVOICE_INTEREST)
+                .filter(sr -> !sr.isInitialization())
+                .filter(sr -> sr.getDocumentData().getProductCode().equals("0063"))
+                .filter(sr -> sr.openInvoiceValue().isPositive())
+                .findAny().isPresent();
     }
 
     private String sanitize(final String s) {
