@@ -18,6 +18,7 @@
  */
 package pt.ist.fenixedu.cmscomponents.domain.homepage.components;
 
+import com.google.common.hash.Hashing;
 import org.fenixedu.cms.domain.CloneCache;
 import org.fenixedu.cms.domain.Page;
 import org.fenixedu.cms.domain.Site;
@@ -33,6 +34,8 @@ import com.google.gson.JsonObject;
 import pt.ist.fenixedu.cmscomponents.FenixEduIstCmsComponentsConfiguration;
 import pt.ist.fenixedu.cmscomponents.domain.homepage.HomepageSite;
 
+import java.nio.charset.StandardCharsets;
+
 @ComponentType(name = "Researcher Section Data Component",
         description = "Provides homepage owner's researcher section page data.")
 public class ResearcherComponent extends ResearcherComponent_Base {
@@ -47,8 +50,11 @@ public class ResearcherComponent extends ResearcherComponent_Base {
 
     @Override
     public void handle(Page page, TemplateContext local, TemplateContext global) {
+        String userId = Hashing.sha256().hashString(
+                page.getSite().getOwner().getUsername() + "@tecnico.ulisboa.pt",
+                        StandardCharsets.UTF_8).toString();
         global.put("bundle", getTitleBundle());
-        global.put("researcher", page.getSite().getOwner().getUsername());
+        global.put("researcher", userId);
         global.put("sotisUrl", FenixEduIstCmsComponentsConfiguration.getConfiguration().sotisURL());
         global.put("language", I18N.getLocale().toLanguageTag());
         global.put("dataKey", getDataKey());
