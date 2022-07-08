@@ -25,7 +25,7 @@ import org.fenixedu.commons.configuration.ConfigurationProperty;
 public class FenixEduIstCmsComponentsConfiguration {
     @ConfigurationManager(description = "FenixEdu IST CMS Components specific properties")
     public interface ConfigurationProperties {
-        @ConfigurationProperty(key = "sotisURL", defaultValue = "https://sotis.tecnico.ulisboa.pt")
+        @ConfigurationProperty(key = "sotisURL", defaultValue = "https://scholar.tecnico.ulisboa.pt")
         public String sotisURL();
     }
  
