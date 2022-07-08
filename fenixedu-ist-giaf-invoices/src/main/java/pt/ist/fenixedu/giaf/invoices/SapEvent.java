@@ -13,6 +13,7 @@ import org.fenixedu.academic.domain.accounting.AccountingTransactionDetail;
 import org.fenixedu.academic.domain.accounting.CustomEvent;
 import org.fenixedu.academic.domain.accounting.Event;
 import org.fenixedu.academic.domain.accounting.EventType;
+import org.fenixedu.academic.domain.accounting.IBANPayment;
 import org.fenixedu.academic.domain.accounting.PaymentMethod;
 import org.fenixedu.academic.domain.accounting.accountingTransactions.detail.SibsTransactionDetail;
 import org.fenixedu.academic.domain.accounting.calculator.CreditEntry;
@@ -1021,6 +1022,22 @@ public class SapEvent {
                     json.addProperty("sibsDate", settlementDate.toString(SIBS_DATE_FORMAT));
                 }
             }
+        } else if (PaymentMethod.getMbwayPaymentMethod() == transactionDetail.getPaymentMethod()) {
+            final SibsPayment sibsPayment = transactionDetail.getTransaction().getSibsPayment();
+            if (sibsPayment != null) {
+                final LocalDate settlementDate = sibsPayment.getSettlementDate();
+                if (settlementDate == null) {
+                    throw new Error("Transaction does not have settlement date! " + transactionDetail.getExternalId());
+                }
+                json.addProperty("sibsDate", settlementDate.toString(SIBS_DATE_FORMAT));
+            }
+        } else if (PaymentMethod.getIBANPaymentMethod() == transactionDetail.getPaymentMethod()) {
+            final IBANPayment ibanPayment = transactionDetail.getTransaction().getIBANPayment();
+            final LocalDate settlementDate = ibanPayment.getSettlementDate();
+            if (settlementDate == null) {
+                throw new Error("Transaction does not have settlement date! " + transactionDetail.getExternalId());
+            }
+            json.addProperty("sibsDate", settlementDate.toString(SIBS_DATE_FORMAT));
         }
     }
 
