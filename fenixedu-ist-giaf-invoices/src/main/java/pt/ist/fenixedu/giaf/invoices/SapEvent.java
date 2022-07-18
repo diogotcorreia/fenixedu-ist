@@ -71,17 +71,18 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SapEvent {
 
-    private static final String MORADA_DESCONHECIDO = "Desconhecido";
+    public static final String MORADA_DESCONHECIDO = "Desconhecido";
     private static final String EMPTY_JSON = "{}";
-    private static final int MAX_SIZE_ADDRESS = 100;
-    private static final int MAX_SIZE_CITY = 50;
-    private static final int MAX_SIZE_REGION = 50;
-    private static final int MAX_SIZE_POSTAL_CODE = 20;
+    public static final int MAX_SIZE_ADDRESS = 100;
+    public static final int MAX_SIZE_CITY = 50;
+    public static final int MAX_SIZE_REGION = 50;
+    public static final int MAX_SIZE_POSTAL_CODE = 20;
     private static final int MAX_SIZE_VAT_NUMBER = 20;
     public static final String PROCESS_ID = "006";
     public static final String IST_VAT_NUMBER = "501507930";
@@ -1479,18 +1480,13 @@ public class SapEvent {
         return json;
     }
 
-    private JsonObject toJsonClient(final Party party, final String clientId) {
-        final JsonObject clientData = new JsonObject();
-        clientData.addProperty("accountId", "STUDENT");
-        clientData.addProperty("companyName", party.getName());
-        clientData.addProperty("clientId", clientId);
-        //country must be the same as the fiscal country
+    public static BiConsumer<Party, JsonObject> ADDRESS_FILLER = (party, clientData) -> {
+        final String clientId = clientData.get("clientId").getAsString();
         final String countryCode = clientId.substring(0, 2);
 
         PhysicalAddress physicalAddress = Utils.toAddress(party, countryCode);
         String countryForAddress = physicalAddress == null  || physicalAddress.getCountryOfResidence() == null
                 ? countryCode : physicalAddress.getCountryOfResidence().getCode();
-        clientData.addProperty("country", countryForAddress);
         clientData.addProperty("street",
                 physicalAddress != null && physicalAddress.getAddress() != null && !Strings.isNullOrEmpty(physicalAddress.getAddress().trim()) ?
                         Utils.limitFormat(MAX_SIZE_ADDRESS, physicalAddress.getAddress()) : MORADA_DESCONHECIDO);
@@ -1514,11 +1510,23 @@ public class SapEvent {
         }
         clientData.addProperty("postalCode",
                 !Strings.isNullOrEmpty(postalCode) ? postalCode : PostalCodeValidator.examplePostCodeFor(countryForAddress));
+    };
 
-        clientData.addProperty("vatNumber", Utils.limitFormat(MAX_SIZE_VAT_NUMBER, clientId));
-        clientData.addProperty("fiscalCountry", countryCode);
+    private JsonObject toJsonClient(final Party party, final String clientId) {
+        final JsonObject clientData = new JsonObject();
+        clientData.addProperty("accountId", "STUDENT");
+        clientData.addProperty("companyName", party.getName());
         clientData.addProperty("nationality", party.getCountry().getCode());
         clientData.addProperty("billingIndicator", 0);
+        clientData.addProperty("clientId", clientId);
+
+        //country must be the same as the fiscal country
+        final String countryCode = clientId.substring(0, 2);
+        clientData.addProperty("fiscalCountry", countryCode);
+        clientData.addProperty("country", countryCode);
+        clientData.addProperty("vatNumber", Utils.limitFormat(MAX_SIZE_VAT_NUMBER, clientId));
+
+        ADDRESS_FILLER.accept(party, clientData);
 
         return clientData;
     }
