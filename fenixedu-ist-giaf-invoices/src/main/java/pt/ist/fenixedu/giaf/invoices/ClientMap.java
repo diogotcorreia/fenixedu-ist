@@ -1,16 +1,17 @@
 package pt.ist.fenixedu.giaf.invoices;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
 import org.fenixedu.TINValidator;
 import org.fenixedu.academic.domain.Country;
 import org.fenixedu.academic.domain.Person;
 import org.fenixedu.academic.domain.organizationalStructure.Party;
 import org.fenixedu.bennu.GiafInvoiceConfiguration;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.function.Function;
 
 public class ClientMap {
 
@@ -31,7 +32,7 @@ public class ClientMap {
         }
     }
 
-    public static String uVATNumberFor(final Party party) {
+    public static Function<Party, String> uVATNumberProvider = party -> {
         final String tin = party.getSocialSecurityNumber();
         if (tin != null && !tin.trim().isEmpty()) {
             if (tin.length() > 2
@@ -50,7 +51,7 @@ public class ClientMap {
             if (country != null) {
                 return country.getCode() + tin;
             }
-        }        
+        }
         if (tin != null && tin.length() > 2 && !"PT".equals(tin.substring(0, 2)) && Country.readByTwoLetterCode(tin.substring(0, 2)) != null) {
             return tin;
         }
@@ -59,6 +60,10 @@ public class ClientMap {
             return country.getCode() + party.getExternalId();
         }
         return "PT999999990";
+    };
+
+    public static String uVATNumberFor(final Party party) {
+        return uVATNumberProvider.apply(party);
     }
 
     private static Country getValidCountry(final String tin, final Country... countries) {
