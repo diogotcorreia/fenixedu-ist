@@ -54,7 +54,8 @@ public final class InquiriesRoot extends InquiriesRoot_Base {
 
     private static boolean isAvailableDegreeForInquiries(Degree degree) {
         return degree.getDegreeType().isBolonhaDegree() || degree.getDegreeType().isIntegratedMasterDegree()
-                || degree.getDegreeType().isBolonhaMasterDegree() || degree.getDegreeType().getUnstructured() || isAvailableDegree(degree);
+                || degree.getDegreeType().isBolonhaMasterDegree() || degree.getDegreeType().getUnstructured()
+                || degree.getDegreeType().getMinor() || isAvailableDegree(degree);
     }
 
     private static boolean isAvailableDegree(Degree degree) {
