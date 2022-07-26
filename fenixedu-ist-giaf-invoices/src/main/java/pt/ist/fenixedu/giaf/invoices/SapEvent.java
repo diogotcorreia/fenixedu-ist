@@ -170,7 +170,7 @@ public class SapEvent {
     }
 
     private void registerInvoicePlain(Money value, String clientId) {
-        final JsonObject data = toJsonInvoice(event, value, getDocumentDate(event.getWhenOccured(), true), new DateTime(), clientId, false, false, false);
+        final JsonObject data = toJsonInvoice(event, value, getDocumentDate(new DateTime(), true), new DateTime(), clientId, false, false, false);
         final String documentNumber = getDocumentNumber(data, false);
         new SapRequest(event, clientId, value, documentNumber, SapRequestType.INVOICE, Money.ZERO, data);
     }
