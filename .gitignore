@@ -24,3 +24,8 @@ bin/
 .vscode
 .settings
 .factorypath
+
+# Release files #
+fenixedu-ist-*/*.releaseBackup
+.releaseBackup
+release.properties
