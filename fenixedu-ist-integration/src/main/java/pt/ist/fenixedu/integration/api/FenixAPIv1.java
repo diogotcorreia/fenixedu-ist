@@ -2188,7 +2188,9 @@ public class FenixAPIv1 {
                     String start = formatHour.print(infoGenericEvent.getInicio().getTimeInMillis());
                     String end = formatHour.print(infoGenericEvent.getFim().getTimeInMillis());
                     String weekday = infoGenericEvent.getDiaSemana().getDiaSemanaString();
-                    FenixPeriod period = new FenixPeriod(day + " " + start, day + " " + end);
+                    
+                    
+                    FenixPeriod period = new FenixPeriod(formatDayHour.print(new DateTime(infoGenericEvent.getInicio())), formatDayHour.print(new DateTime(infoGenericEvent.getFim())));
 
                     roomEvent = new FenixRoomEvent.GenericEvent(start, end, weekday, day, period, description, title);
                 }
