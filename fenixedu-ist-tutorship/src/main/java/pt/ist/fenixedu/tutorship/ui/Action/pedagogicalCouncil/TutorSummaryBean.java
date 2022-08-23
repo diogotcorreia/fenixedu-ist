@@ -227,7 +227,7 @@ public class TutorSummaryBean extends TutorSearchBean {
             if (chooseDegreeBean.getExecutionSemester() != null) {
                 for (final ExecutionDegree executionDegree : chooseDegreeBean.getExecutionSemester().getExecutionYear()
                         .getExecutionDegreesSet()) {
-                    if (executionDegree.getDegreeType().isFirstCycle()) {
+                    if (executionDegree.getDegreeType().isFirstCycle() || executionDegree.getDegreeType().isSecondCycle()) {
                         result.add(executionDegree.getDegree());
                     }
                 }

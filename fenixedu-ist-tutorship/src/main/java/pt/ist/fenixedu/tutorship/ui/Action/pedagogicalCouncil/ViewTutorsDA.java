@@ -25,6 +25,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -36,7 +38,10 @@ import org.apache.struts.action.ActionMapping;
 import org.fenixedu.academic.domain.ExecutionDegree;
 import org.fenixedu.academic.domain.ExecutionSemester;
 import org.fenixedu.academic.domain.ExecutionYear;
+import org.fenixedu.academic.domain.Teacher;
 import org.fenixedu.academic.domain.degree.DegreeType;
+import org.fenixedu.academic.domain.degreeStructure.CycleType;
+import org.fenixedu.academic.domain.student.Student;
 import org.fenixedu.academic.ui.struts.action.base.FenixDispatchAction;
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.bennu.struts.annotations.Forward;
@@ -91,25 +96,32 @@ public class ViewTutorsDA extends FenixDispatchAction {
         spreadsheet.addHeader("Tutorando-Nome", 12500);
         spreadsheet.addHeader("Tutorando-Telemóvel", 7000);
         spreadsheet.addHeader("Tutorando-Email");
+        spreadsheet.addHeader("Tutorando-Ciclo");
 
         for (TutorshipIntention tutorshipIntention : tutorsList) {
-            if (tutorshipIntention.getTutorships().size() > 0) {
-                for (Tutorship tutorship : tutorshipIntention.getTutorships()) {
-                    spreadsheet.newRow();
-                    spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getUsername());
-                    spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getName());
-                    spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getEmailForSendingEmails());
-                    spreadsheet.addCell(tutorship.getStudent().getNumber());
-                    spreadsheet.addCell(tutorship.getStudent().getName());
-                    spreadsheet.addCell(tutorship.getStudent().getPerson().getDefaultMobilePhoneNumber());
-                    spreadsheet.addCell(tutorship.getStudent().getPerson().getDefaultEmailAddressValue());
-                }
-            }
-            else {
+            if (tutorshipIntention.getTutorships().isEmpty()) {
                 spreadsheet.newRow();
                 spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getUsername());
                 spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getName());
                 spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getEmailForSendingEmails());
+            }
+
+            for (Tutorship tutorship : tutorshipIntention.getTutorships()) {
+                spreadsheet.newRow();
+                spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getUsername());
+                spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getName());
+                spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getEmailForSendingEmails());
+                spreadsheet.addCell(tutorship.getStudent().getNumber());
+                spreadsheet.addCell(tutorship.getStudent().getName());
+                spreadsheet.addCell(tutorship.getStudent().getPerson().getDefaultMobilePhoneNumber());
+                spreadsheet.addCell(tutorship.getStudent().getPerson().getDefaultEmailAddressValue());
+
+                CycleType studentCycle = tutorship.getStudent().getCycleType(executionDegree.getExecutionYear());
+                if (studentCycle != null) {
+                    spreadsheet.addCell(studentCycle.getDescription());
+                } else {
+                    spreadsheet.addCell("N/A");
+                }
             }
         }
 
@@ -117,7 +129,7 @@ public class ViewTutorsDA extends FenixDispatchAction {
         response.setHeader("Content-Disposition", "attachment; filename="
                 + StringNormalizer.slugify(executionDegree.getExecutionYear().getQualifiedName() + " "
                         + executionDegree.getPresentationName())
-                + "\".xls");
+                + ".xls");
         final ServletOutputStream writer = response.getOutputStream();
         spreadsheet.getWorkbook().write(writer);
         writer.flush();
@@ -131,7 +143,7 @@ public class ViewTutorsDA extends FenixDispatchAction {
         ExecutionSemester executionSemester = getDomainObject(request, "executionSemester");
         ExecutionYear executionYear = executionSemester.getExecutionYear();
 
-        Map<String, List<TutorshipIntention>> tutorsListByDegree = TutorshipIntention.getTutorshipIntentions(executionYear);
+        Map<ExecutionDegree, List<TutorshipIntention>> tutorsListByDegree = TutorshipIntention.getTutorshipIntentionsWithExecutionDegrees(executionYear);
 
         StyledExcelSpreadsheet spreadsheet = new StyledExcelSpreadsheet("Tutores-Tutorandos", 15);
         spreadsheet.newHeaderRow();
@@ -143,30 +155,77 @@ public class ViewTutorsDA extends FenixDispatchAction {
         spreadsheet.addHeader("Tutorando-Nome", 12500);
         spreadsheet.addHeader("Tutorando-Telemóvel", 7000);
         spreadsheet.addHeader("Tutorando-Email");
+        spreadsheet.addHeader("Tutorando-Ciclo");
+        spreadsheet.addHeader("Curso-Ciclos");
 
-        for (Map.Entry<String, List<TutorshipIntention>> entry : tutorsListByDegree.entrySet()) {
-            String degreeName = entry.getKey();
+        for (Map.Entry<ExecutionDegree, List<TutorshipIntention>> entry : tutorsListByDegree.entrySet()) {
+            ExecutionDegree degree = entry.getKey();
+
+            String degreeName = degree.getPresentationName();
+
+            List<CycleType> degreeCycles = degree.getDegree().getCycleTypes().stream().collect(Collectors.toList());
+            degreeCycles.sort(CycleType.COMPARATOR_BY_LESS_WEIGHT);
+            String degreeCyclesStr = degreeCycles.stream().map(c -> c.getDescription()).collect(Collectors.joining(", ")); 
+            
+
+            if (entry.getValue().isEmpty()) {
+                spreadsheet.newRow();
+
+                spreadsheet.addCell("");
+                spreadsheet.addCell("");
+                spreadsheet.addCell("");
+                
+                spreadsheet.addCell(degreeName);
+
+                spreadsheet.addCell("");
+                spreadsheet.addCell("");
+                spreadsheet.addCell("");
+                spreadsheet.addCell("");
+                spreadsheet.addCell("");
+                
+                spreadsheet.addCell(degreeCyclesStr);
+            }
 
             for (TutorshipIntention tutorshipIntention : entry.getValue()) {
-                if (tutorshipIntention.getTutorships().size() > 0) {
-                    for (Tutorship tutorship : tutorshipIntention.getTutorships()) {
-                        spreadsheet.newRow();
-                        spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getUsername());
-                        spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getName());
-                        spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getEmailForSendingEmails());
-                        spreadsheet.addCell(degreeName);
-                        spreadsheet.addCell(tutorship.getStudent().getNumber());
-                        spreadsheet.addCell(tutorship.getStudent().getName());
-                        spreadsheet.addCell(tutorship.getStudent().getPerson().getDefaultMobilePhoneNumber());
-                        spreadsheet.addCell(tutorship.getStudent().getPerson().getDefaultEmailAddressValue());
-                    }
-                }
-                else {
+                if (tutorshipIntention.getTutorships().isEmpty()) {
                     spreadsheet.newRow();
+
                     spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getUsername());
                     spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getName());
                     spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getEmailForSendingEmails());
+
                     spreadsheet.addCell(degreeName);
+
+                    spreadsheet.addCell("");
+                    spreadsheet.addCell("");
+                    spreadsheet.addCell("");
+                    spreadsheet.addCell("");
+                    spreadsheet.addCell("");
+                    
+                    spreadsheet.addCell(degreeCyclesStr);
+                }
+
+                for (Tutorship tutorship : tutorshipIntention.getTutorships()) {
+                    spreadsheet.newRow();
+
+                    spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getUsername());
+                    spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getName());
+                    spreadsheet.addCell(tutorshipIntention.getTeacher().getPerson().getEmailForSendingEmails());
+
+                    spreadsheet.addCell(degreeName);
+
+                    spreadsheet.addCell(tutorship.getStudent().getNumber());
+                    spreadsheet.addCell(tutorship.getStudent().getName());
+                    spreadsheet.addCell(tutorship.getStudent().getPerson().getDefaultMobilePhoneNumber());
+                    spreadsheet.addCell(tutorship.getStudent().getPerson().getDefaultEmailAddressValue());
+                    CycleType studentCycle = tutorship.getStudent().getCycleType(executionYear);
+                    if (studentCycle != null) {
+                        spreadsheet.addCell(studentCycle.getDescription());
+                    } else {
+                        spreadsheet.addCell("N/A");
+                    }
+                    
+                    spreadsheet.addCell(degreeCyclesStr);
                 }
             }
         }
@@ -175,7 +234,7 @@ public class ViewTutorsDA extends FenixDispatchAction {
         response.setHeader("Content-Disposition", "attachment; filename="
                 + StringNormalizer.slugify(executionYear.getQualifiedName() + " "
                 + "todos os cursos")
-                + "\".xls");
+                + ".xls");
         final ServletOutputStream writer = response.getOutputStream();
         spreadsheet.getWorkbook().write(writer);
         writer.flush();
@@ -226,7 +285,7 @@ public class ViewTutorsDA extends FenixDispatchAction {
                 final ExecutionYear executionYear = executionPeriod.getExecutionYear();
                 for (ExecutionDegree executionDegree : executionYear.getExecutionDegreesSet()) {
                     DegreeType degreeType = executionDegree.getDegreeType();
-                    if (degreeType.isIntegratedMasterDegree() || degreeType.isBolonhaDegree()) {
+                    if (degreeType.isIntegratedMasterDegree() || degreeType.isBolonhaDegree() || degreeType.isBolonhaMasterDegree()) {
                         executionDegrees.add(executionDegree);
                     }
                 }
