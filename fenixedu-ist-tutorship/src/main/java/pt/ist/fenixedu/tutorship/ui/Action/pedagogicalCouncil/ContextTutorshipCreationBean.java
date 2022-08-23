@@ -99,7 +99,7 @@ public class ContextTutorshipCreationBean implements Serializable {
                 final ExecutionYear executionYear = executionPeriod.getExecutionYear();
                 for (ExecutionDegree executionDegree : executionYear.getExecutionDegreesSet()) {
                     DegreeType degreeType = executionDegree.getDegreeType();
-                    if (degreeType.isIntegratedMasterDegree() || degreeType.isBolonhaDegree()) {
+                    if (degreeType.isIntegratedMasterDegree() || degreeType.isBolonhaDegree() || degreeType.isBolonhaMasterDegree()) {
                         executionDegrees.add(executionDegree);
                     }
                 }

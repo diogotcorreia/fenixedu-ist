@@ -94,6 +94,7 @@ public class TutorshipStudentLowPerformanceQueueJob extends TutorshipStudentLowP
                 else if (!registration.isBolonha() && isValidSourceLink(registration)) {
                     for (Registration destinationRegistration : registration.getDestinyRegistrationsSet()) {
                         if ((!destinationRegistration.getDegreeType().isBolonhaDegree())
+                                && (!destinationRegistration.getDegreeType().isBolonhaMasterDegree())
                                 && (!destinationRegistration.getDegreeType().isIntegratedMasterDegree())) {
                             continue;
                         }
@@ -224,7 +225,9 @@ public class TutorshipStudentLowPerformanceQueueJob extends TutorshipStudentLowP
 
     // Historic Student
     protected static List<Registration> getFullRegistrationPath(final Registration current) {
-        if (current.getDegreeType().isBolonhaDegree() || current.getDegreeType().isIntegratedMasterDegree()) {
+        if (current.getDegreeType().isBolonhaDegree() 
+                || current.getDegreeType().isBolonhaMasterDegree()
+                || current.getDegreeType().isIntegratedMasterDegree()) {
             List<Registration> path = new ArrayList<Registration>();
             path.add(current);
             Registration source;

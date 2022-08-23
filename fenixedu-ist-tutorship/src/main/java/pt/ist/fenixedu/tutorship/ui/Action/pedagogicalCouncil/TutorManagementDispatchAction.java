@@ -200,7 +200,9 @@ public class TutorManagementDispatchAction extends FenixDispatchAction {
      * section
      */
     protected boolean validateDegreeTypeAccessRestrictions(final ExecutionDegree executionDegree) {
-        return !(executionDegree.isBolonhaDegree() && executionDegree.getDegree().getSigla().equals("LEEC-pB"));
+        // used to be !(executionDegree.isBolonhaDegree() && executionDegree.getDegree().getSigla().equals("LEEC-pB"))
+        // but that seems just wrong? we want to allow access if Bolonha or LEEC-pB
+        return executionDegree.isBolonhaDegree() || executionDegree.getDegree().getSigla().equals("LEEC-pB");
     }
 
     /*

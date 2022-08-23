@@ -106,15 +106,21 @@ public class TutorshipIntention extends TutorshipIntention_Base {
     }
 
     public static Map<String, List<TutorshipIntention>> getTutorshipIntentions(ExecutionYear executionYear) {
-        Map<String, List<TutorshipIntention>> result = new LinkedHashMap<>();
+        Map<ExecutionDegree, List<TutorshipIntention>> tutorshipIntentionsWithExecutionDegrees = getTutorshipIntentionsWithExecutionDegrees(executionYear);
+        return tutorshipIntentionsWithExecutionDegrees.entrySet().stream()
+                .collect(Collectors.toMap(e -> e.getKey().getPresentationName(), e -> e.getValue()));
+    }
+
+    public static Map<ExecutionDegree, List<TutorshipIntention>> getTutorshipIntentionsWithExecutionDegrees(ExecutionYear executionYear) {
+        Map<ExecutionDegree, List<TutorshipIntention>> result = new LinkedHashMap<>();
 
         List<ExecutionDegree> degrees = executionYear.getExecutionDegreesSet().stream()
-                .filter(executionDegree -> executionDegree.getDegreeType().isIntegratedMasterDegree() || executionDegree.getDegreeType().isBolonhaDegree())
+                .filter(executionDegree -> executionDegree.getDegreeType().isIntegratedMasterDegree() || executionDegree.getDegreeType().isBolonhaDegree() || executionDegree.getDegreeType().isBolonhaMasterDegree())
                 .sorted(ExecutionDegree.EXECUTION_DEGREE_COMPARATORY_BY_DEGREE_TYPE_AND_NAME)
                 .collect(Collectors.toList());
 
         for (ExecutionDegree executionDegree : degrees) {
-
+            
             List<TutorshipIntention> degreeTutorshipIntentions = new ArrayList<>();
             for (TutorshipIntention tutorshipIntention : executionDegree.getDegreeCurricularPlan().getTutorshipIntentionSet()) {
                 if (tutorshipIntention.getAcademicInterval().equals(executionDegree.getAcademicInterval())) {
@@ -122,7 +128,7 @@ public class TutorshipIntention extends TutorshipIntention_Base {
                 }
             }
             degreeTutorshipIntentions.sort(TutorshipIntention.COMPARATOR_FOR_ATTRIBUTING_TUTOR_STUDENTS);
-            result.put(executionDegree.getPresentationName(), degreeTutorshipIntentions);
+            result.put(executionDegree, degreeTutorshipIntentions);
         }
 
 
