@@ -52,14 +52,14 @@ public class TutorshipIntention extends TutorshipIntention_Base {
         setDegreeCurricularPlan(dcp);
         setTeacher(teacher);
         setAcademicInterval(interval);
-        checkOverlaps();
+        checkDuplicate();
     }
 
-    private void checkOverlaps() {
+    private void checkDuplicate() {
         for (TutorshipIntention intention : getDegreeCurricularPlan().getTutorshipIntentionSet()) {
             if (!intention.equals(this) && intention.getTeacher().equals(getTeacher())
-                    && intention.getAcademicInterval().overlaps(getAcademicInterval())) {
-                throw new DomainException("error.tutorship.overlapingTutorshipIntentions");
+                    && intention.getAcademicInterval().equals(getAcademicInterval())) {
+                throw new DomainException("error.tutorship.duplicateTutorshipIntentions");
             }
         }
     }
