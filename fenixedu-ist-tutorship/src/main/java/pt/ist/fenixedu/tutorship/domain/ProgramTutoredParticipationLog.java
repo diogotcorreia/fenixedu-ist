@@ -49,6 +49,13 @@ public class ProgramTutoredParticipationLog extends ProgramTutoredParticipationL
         return createProgramTutoredParticipationLog(degree, executionYear, label);
     }
 
+    public static ProgramTutoredParticipationLog createErrorLog(String stackTrace, Degree degree, ExecutionYear executionYear, String bundle, String key,
+            String... args) {
+        final String label = generateLabelDescription(bundle, key, args);
+        final String full = label + "\n" + stackTrace;
+        return createProgramTutoredParticipationLog(degree, executionYear, full);
+    }
+
     @Override
     public DegreeLogTypes getDegreeLogType() {
         return DegreeLogTypes.PROGRAM_TUTORED_PARTICIPATION;

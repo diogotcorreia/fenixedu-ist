@@ -25,6 +25,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
@@ -39,6 +40,7 @@ import org.fenixedu.academic.ui.struts.action.coordinator.CoordinatorApplication
 import org.fenixedu.academic.ui.struts.action.coordinator.CoordinatorDegreeManagement;
 import org.fenixedu.academic.ui.struts.action.coordinator.DegreeCoordinatorIndex;
 import org.fenixedu.academic.util.Bundle;
+import org.fenixedu.bennu.core.domain.exceptions.DomainException;
 import org.fenixedu.bennu.struts.annotations.Forward;
 import org.fenixedu.bennu.struts.annotations.Mapping;
 import org.fenixedu.bennu.struts.portal.EntryPoint;
@@ -50,6 +52,7 @@ import pt.ist.fenixedu.tutorship.domain.Tutorship;
 import pt.ist.fenixedu.tutorship.domain.TutorshipIntention;
 import pt.ist.fenixframework.Atomic;
 import pt.ist.fenixframework.FenixFramework;
+import pt.ist.fenixframework.Atomic.TxMode;
 
 @StrutsFunctionality(app = CoordinatorManagementApp.class, path = "tutorship", titleKey = "link.coordinator.tutorTeachers",
         bundle = "CoordinatorResources")
@@ -71,6 +74,10 @@ public class TutorTeachersManagementDispatchAction extends FenixDispatchAction {
         private boolean deletable;
 
         private final int previousParticipations;
+
+        private boolean saveSuccess;
+        private String logMsg;
+        private String stackTrace;
 
         public TutorshipIntentionSelector(Teacher teacher, Department department, DegreeCurricularPlan dcp,
                 AcademicInterval academicInterval) {
@@ -142,19 +149,73 @@ public class TutorTeachersManagementDispatchAction extends FenixDispatchAction {
             return previousParticipations;
         }
 
+        public boolean isSaveSuccess() {
+            return saveSuccess;
+        }
+
         public void save() {
             TutorshipIntention intention = TutorshipIntention.readByDcpAndTeacherAndInterval(dcp, teacher, academicInterval);
-            ExecutionYear executionYear = (ExecutionYear) ExecutionYear.getExecutionInterval(academicInterval);
             if (intention == null && intending) {
-                new TutorshipIntention(dcp, teacher, academicInterval);
-                ProgramTutoredParticipationLog.createLog(dcp.getDegree(), executionYear, Bundle.MESSAGING,
-                        "log.degree.programtutoredparticipation.addteacher", teacher.getPerson().getPresentationName(), dcp
-                                .getDegree().getPresentationName());
+                addTeacher();
             } else if (intention != null && !intending) {
-                ProgramTutoredParticipationLog.createLog(dcp.getDegree(), executionYear, Bundle.MESSAGING,
-                        "log.degree.programtutoredparticipation.removeteacher", teacher.getPerson().getPresentationName(), dcp
-                                .getDegree().getPresentationName());
+                removeTeacher(intention);
+            } else {
+                // we don't need to do any changes
+                logMsg = null;
+                stackTrace = null;
+                saveSuccess = true;
+            }
+        }
+
+        private void addTeacher() {
+            try {
+                new TutorshipIntention(dcp, teacher, academicInterval);
+            } catch (DomainException de) {
+                logMsg = "log.degree.programtutoredparticipation.addteacher.failed";
+                stackTrace = ExceptionUtils.getFullStackTrace(de);
+                saveSuccess = false;
+                return;
+            }
+            
+            logMsg = "log.degree.programtutoredparticipation.addteacher";
+            stackTrace = null;
+            saveSuccess = true;
+            return;
+        }
+
+        private void removeTeacher(TutorshipIntention intention) {
+            if (!intention.isDeletable()) {
+                logMsg = "log.degree.programtutoredparticipation.removeteacher.nondeletable";
+                stackTrace = null;
+                saveSuccess = false;
+                return;
+            }
+            
+            try {
                 intention.delete();
+            } catch (DomainException de) {
+                logMsg = "log.degree.programtutoredparticipation.removeteacher.failed";
+                stackTrace = ExceptionUtils.getFullStackTrace(de);
+                saveSuccess = false;
+                return;
+            }
+            
+            logMsg = "log.degree.programtutoredparticipation.removeteacher";
+            stackTrace = null;
+            saveSuccess = true;
+            return;
+        }
+
+        public void logSaveResults() {
+            if (logMsg != null) {
+                ExecutionYear executionYear = (ExecutionYear) ExecutionYear.getExecutionInterval(academicInterval);
+                if (stackTrace == null) {
+                    ProgramTutoredParticipationLog.createLog(dcp.getDegree(), executionYear, Bundle.MESSAGING,
+                        logMsg, teacher.getPerson().getPresentationName(), dcp.getDegree().getPresentationName());
+                } else {
+                    ProgramTutoredParticipationLog.createErrorLog(stackTrace, dcp.getDegree(), executionYear, Bundle.MESSAGING, 
+                        logMsg, teacher.getPerson().getPresentationName(), dcp.getDegree().getPresentationName());
+                }
             }
         }
 
@@ -163,6 +224,8 @@ public class TutorTeachersManagementDispatchAction extends FenixDispatchAction {
             return teacher.getPerson().getUsername() + "[" + (intending ? "x" : " ") + "]";
         }
     }
+
+    public static class TutorshipIntentionSelectorException extends Exception { }
 
     public static class YearSelection implements Serializable {
         private AcademicInterval executionYear = AcademicInterval.readDefaultAcademicInterval(AcademicPeriod.YEAR)
@@ -231,7 +294,18 @@ public class TutorTeachersManagementDispatchAction extends FenixDispatchAction {
             HttpServletResponse response) {
         YearSelection yearSelection = getYearSelection(request);
         List<TutorshipIntentionSelector> selector = getRenderedObject("selector");
-        save(selector);
+        boolean success = true;
+        try {
+            save(selector);
+        } catch (TutorshipIntentionSelectorException re) {
+            saveErrorLogs(selector);
+            success = false;
+        }
+        
+        if (!success) {
+            request.setAttribute("showError", true);
+        }
+
         request.setAttribute("yearSelection", yearSelection);
         request.setAttribute("selector", selector);
         return selectYear(mapping, actionForm, request, response);
@@ -253,10 +327,31 @@ public class TutorTeachersManagementDispatchAction extends FenixDispatchAction {
         return FenixFramework.getDomainObject(request.getParameter("degreeCurricularPlanID"));
     }
 
-    @Atomic
-    private void save(List<TutorshipIntentionSelector> tutorshipIntentions) {
+    @Atomic(mode = TxMode.WRITE)
+    private void save(List<TutorshipIntentionSelector> tutorshipIntentions) throws TutorshipIntentionSelectorException {
+        boolean success = true;
         for (TutorshipIntentionSelector selector : tutorshipIntentions) {
             selector.save();
+            if (!selector.isSaveSuccess()) {
+                success = false;
+                continue;
+            }
+            if (success) {
+                selector.logSaveResults();
+            }
+        }
+
+        if (!success) {
+            throw new TutorshipIntentionSelectorException();
+        }
+    }
+
+    @Atomic(mode = TxMode.WRITE)
+    private void saveErrorLogs(List<TutorshipIntentionSelector> tutorshipIntentions) {
+        for (TutorshipIntentionSelector selector : tutorshipIntentions) {
+            if (!selector.isSaveSuccess()) {
+                selector.logSaveResults();
+            }
         }
     }
 }

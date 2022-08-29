@@ -29,6 +29,13 @@
 
 <h2><bean:message key="link.coordinator.tutorTeachers" bundle="COORDINATOR_RESOURCES"/></h2>
 
+
+<logic:present name="showError">
+    <div class="alert alert-danger" role="alert">
+        <bean:message key="general.error" bundle="BOLONHA_MANAGER_RESOURCES"/>
+    </div>
+</logic:present>
+
 <fr:form action="/tutorTeachers.do">
     <fr:edit id="yearSelection" name="yearSelection">
         <fr:schema bundle="COORDINATOR_RESOURCES"
