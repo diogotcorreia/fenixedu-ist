@@ -142,11 +142,12 @@ public class UpdateAbandonStateBean implements Serializable {
     private boolean evaluateAndCheckEnrolments(final Registration registration, final ExecutionSemester semester) {
         ExecutionSemester startExecutionSemester = ExecutionSemester.readByYearMonthDay(registration.getStartDate());
         if (registration.getStartExecutionYear().isBeforeOrEquals(semester.getExecutionYear())
-                && startExecutionSemester.isBefore(semester)) {
+                && startExecutionSemester.isBefore(semester) && !registration.hasStateType(semester, RegistrationStateType.MOBILITY)) {
             if (hasAnyCurriculumLines(registration, semester)) {
                 return true;
             }
-            if (registration.getStartExecutionYear().isBeforeOrEquals(semester.getPreviousExecutionPeriod().getExecutionYear())) {
+            if (registration.getStartExecutionYear().isBeforeOrEquals(semester.getPreviousExecutionPeriod().getExecutionYear())
+                    && !registration.hasStateType(semester.getPreviousExecutionPeriod(), RegistrationStateType.MOBILITY)) {
                 return hasAnyCurriculumLines(registration, semester.getPreviousExecutionPeriod());
             }
         }
@@ -155,7 +156,7 @@ public class UpdateAbandonStateBean implements Serializable {
 
     private boolean hasAnyCurriculumLines(final Registration registration, final ExecutionSemester semester) {
         final AndPredicate<CurriculumModule> andPredicate = new AndPredicate<>();
-        andPredicate.add(new CurriculumModulePredicateByType(CurriculumLine.class));
+        andPredicate.add(new CurriculumModulePredicateByType(Enrolment.class));
         andPredicate.add(new CurriculumLinePredicateByExecutionSemester(semester));
 
         for (final StudentCurricularPlan studentCurricularPlan : registration.getStudentCurricularPlansSet()) {
