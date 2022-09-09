@@ -34,6 +34,7 @@ import org.fenixedu.academic.domain.contacts.PartyContactType;
 import org.fenixedu.academic.domain.contacts.Phone;
 import org.fenixedu.academic.domain.contacts.PhysicalAddress;
 import org.fenixedu.academic.domain.contacts.PhysicalAddressData;
+import org.fenixedu.academic.domain.exceptions.DomainException;
 import org.fenixedu.academic.domain.organizationalStructure.AcademicalInstitutionType;
 import org.fenixedu.academic.domain.person.Gender;
 import org.fenixedu.academic.domain.person.HumanName;
@@ -175,14 +176,22 @@ public class DegreeCandidateDTO {
         this.areaOfAreaCode = fields[11].trim();
         this.phoneNumber = fields[12].trim();
         this.gender = String2Gender.convert(fields[13].trim());
-        this.dateOfBirth = parseDate(fields[14].trim());
+        this.dateOfBirth = parseDate(fields[14].trim(), dataLine);
         this.contigent = fields[15].trim();
         this.ingressionType = DgesIngressionTypeMapping.getIngressionType(this.contigent);
         this.placingOption = Integer.valueOf(fields[16].trim());
-        this.highSchoolFinalGrade = new BigDecimal(fields[18].trim()).divide(BigDecimal.valueOf(10)).toPlainString();
-        this.entryGrade = new BigDecimal(fields[19].trim().replace(',', '.')).doubleValue();
+        try {
+            this.highSchoolFinalGrade = new BigDecimal(fields[18].trim()).divide(BigDecimal.valueOf(10)).toPlainString();
+        } catch (Exception e) {
+            throw new DomainException("error.dges.importantion.highSchool.grade", dataLine);
+        }
+        try {
+            this.entryGrade = new BigDecimal(fields[19].trim().replace(',', '.')).doubleValue();
+        } catch (Exception e) {
+            throw new DomainException("error.dges.importantion.application.grade", dataLine);
+        }
         this.highSchoolName = fields[21].trim();
-        this.highSchoolType = parseHighSchoolType(fields[22].trim());
+        this.highSchoolType = parseHighSchoolType(fields[22].trim(), dataLine);
         this.highSchoolDegreeDesignation = fields[23].trim();
         this.dgesPassword = fields[24].trim();
         this.nationality = fields.length > 25 ? fields[25].trim() : null;
@@ -190,22 +199,22 @@ public class DegreeCandidateDTO {
         return true;
     }
 
-    private AcademicalInstitutionType parseHighSchoolType(final String value) {
+    private AcademicalInstitutionType parseHighSchoolType(final String value, final String dataLine) {
         if (value.equals("PRI")) {
             return AcademicalInstitutionType.PRIVATE_HIGH_SCHOOL;
         } else if (value.equals("PUB")) {
             return AcademicalInstitutionType.PUBLIC_HIGH_SCHOOL;
         } else {
-            throw new RuntimeException("Unexpected high school type");
+            throw new DomainException("error.dges.importantion.file.unexpected.highSchool.type", dataLine);
         }
 
     }
 
-    private YearMonthDay parseDate(final String value) {
+    private YearMonthDay parseDate(final String value, final String dataLine) {
         try {
             return YearMonthDay.fromDateFields(DATE_FORMAT.parse(value));
         } catch (ParseException e) {
-            throw new RuntimeException(e);
+            throw new DomainException("error.dges.importantion.file.date.format", dataLine);
         }
     }
 
