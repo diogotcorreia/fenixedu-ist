@@ -1,27 +1,25 @@
 package org.fenixedu.ulisboa.integration.sas.webservices;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import javax.jws.WebMethod;
-import javax.jws.WebService;
-
+import com.qubit.solution.fenixedu.bennu.webservices.services.server.BennuWebService;
 import org.apache.commons.lang.StringUtils;
 import org.fenixedu.academic.domain.Degree;
 import org.fenixedu.academic.domain.DegreeCurricularPlan;
 import org.fenixedu.academic.domain.ExecutionYear;
 import org.fenixedu.academic.domain.SchoolLevelType;
+import org.fenixedu.academic.domain.degree.DegreeType;
 import org.fenixedu.academic.domain.degreeStructure.CycleType;
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.ulisboa.integration.sas.dto.ActiveDegreeBean;
 import org.fenixedu.ulisboa.integration.sas.dto.CycleBean;
 
-import com.qubit.solution.fenixedu.bennu.webservices.services.server.BennuWebService;
+import javax.jws.WebMethod;
+import javax.jws.WebService;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 @WebService
 public class ActiveDegreesWebService extends BennuWebService {
@@ -36,16 +34,19 @@ public class ActiveDegreesWebService extends BennuWebService {
 
     //Consider moving this logic to a different place
     private Collection<ActiveDegreeBean> populateActiveDegrees() {
-        Predicate<Degree> hasSchoolLevel = degree -> !degree.getDegreeType().isEmpty();
         List<ActiveDegreeBean> collect =
-                Bennu.getInstance().getDegreesSet().stream().filter(hasSchoolLevel.and(Degree::isActive))
+                Bennu.getInstance().getDegreesSet().stream()
+                        .filter(degree -> !degree.isEmpty())
+                        .filter(degree -> !degree.getDegreeType().getMinor())
+                        .filter(degree -> !degree.getDegreeType().getUnstructured())
+                        .filter(Degree::isActive)
                         .map(d -> populateActiveDegree(d)).collect(Collectors.toList());
         collect.add(getFreeCoursesPlaceholder());
 
         return collect;
     }
 
-    private ActiveDegreeBean populateActiveDegree(Degree degree) {
+    private ActiveDegreeBean populateActiveDegree(final Degree degree) {
         ActiveDegreeBean activeDegreeBean = new ActiveDegreeBean();
 
         ExecutionYear currentExecutionYear = ExecutionYear.readCurrentExecutionYear();
@@ -53,7 +54,15 @@ public class ActiveDegreesWebService extends BennuWebService {
         activeDegreeBean.setDegreeCode(degree.getCode());
         activeDegreeBean.setDesignation(normalizeString(degree.getNameFor(currentExecutionYear).getContent(Locale.getDefault())));
 
-        activeDegreeBean.setSchoolLevel("TODO");
+        final DegreeType degreeType = degree.getDegreeType();
+        final String schoolLevel = degreeType.isIntegratedMasterDegree() ? "Ensino pós-graduado - Mestrado Integrado"
+                : degreeType.isFirstCycle() ? "Ensino superior - Licenciatura (Pós Bolonha)"
+                : degreeType.isSecondCycle() ? "Ensino pós-graduado - Mestrado (Pós Bolonha)"
+                : degreeType.isThirdCycle() ? "Ensino pós-graduado - Doutoramento (Pós Bolonha)"
+                : degreeType.isAdvancedFormationDiploma() ? "Pós-Graduação"
+                : degreeType.isAdvancedSpecializationDiploma() ? "Curso Pós-Graduado de Especialização"
+                : "";
+        activeDegreeBean.setSchoolLevel(schoolLevel);
         //TODO analyse how to represent a degree with multiple cycles        
         activeDegreeBean.setCycles(getDegreeCycles(degree));
 

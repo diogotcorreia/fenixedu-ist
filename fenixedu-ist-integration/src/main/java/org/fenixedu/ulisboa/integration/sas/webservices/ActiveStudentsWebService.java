@@ -1,15 +1,7 @@
 package org.fenixedu.ulisboa.integration.sas.webservices;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.jws.WebMethod;
-import javax.jws.WebService;
-
+import com.qubit.solution.fenixedu.bennu.webservices.services.server.BennuWebService;
+import com.qubit.solution.fenixedu.integration.cgd.domain.idcards.CgdCard;
 import org.fenixedu.academic.domain.Country;
 import org.fenixedu.academic.domain.Enrolment;
 import org.fenixedu.academic.domain.ExecutionSemester;
@@ -25,8 +17,14 @@ import org.joda.time.YearMonthDay;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.qubit.solution.fenixedu.bennu.webservices.services.server.BennuWebService;
-import com.qubit.solution.fenixedu.integration.cgd.domain.idcards.CgdCard;
+import javax.jws.WebMethod;
+import javax.jws.WebService;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @WebService
 public class ActiveStudentsWebService extends BennuWebService {
@@ -39,7 +37,11 @@ public class ActiveStudentsWebService extends BennuWebService {
     }
 
     private boolean isActive(final Registration registration) {
-        return registration.isActive() && !registration.getDegreeType().isEmpty();
+        return registration.isActive()
+                && !registration.getDegreeType().isEmpty()
+                && !registration.getDegree().getDegreeType().getMinor()
+                && !registration.getDegree().getDegreeType().getUnstructured();
+
     }
 
     @WebMethod
