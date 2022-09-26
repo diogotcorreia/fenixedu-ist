@@ -55,12 +55,12 @@ public class ActiveDegreesWebService extends BennuWebService {
         activeDegreeBean.setDesignation(normalizeString(degree.getNameFor(currentExecutionYear).getContent(Locale.getDefault())));
 
         final DegreeType degreeType = degree.getDegreeType();
-        final String schoolLevel = degreeType.isIntegratedMasterDegree() ? "Ensino pós-graduado - Mestrado Integrado"
-                : degreeType.isFirstCycle() ? "Ensino superior - Licenciatura (Pós Bolonha)"
-                : degreeType.isSecondCycle() ? "Ensino pós-graduado - Mestrado (Pós Bolonha)"
-                : degreeType.isThirdCycle() ? "Ensino pós-graduado - Doutoramento (Pós Bolonha)"
-                : degreeType.isAdvancedFormationDiploma() ? "Pós-Graduação"
-                : degreeType.isAdvancedSpecializationDiploma() ? "Curso Pós-Graduado de Especialização"
+        final String schoolLevel = degreeType.isIntegratedMasterDegree() ? "Mestrado Integrado"
+                : degreeType.isFirstCycle() ? "Licenciatura"
+                : degreeType.isSecondCycle() ? "Mestrado"
+                : degreeType.isThirdCycle() ? "Doutoramento"
+                : degreeType.isAdvancedFormationDiploma() ? "Diploma de Formação Avançada"
+                : degreeType.isAdvancedSpecializationDiploma() ? "Diploma de Especialização Avançada"
                 : "";
         activeDegreeBean.setSchoolLevel(schoolLevel);
         //TODO analyse how to represent a degree with multiple cycles        
