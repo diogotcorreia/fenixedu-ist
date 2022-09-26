@@ -139,13 +139,13 @@ public class ActiveStudentsWebService extends BennuWebService {
 
     private static double ects(final Registration registration, final ExecutionYear executionYear) {
         return enrolments(registration, executionYear)
-                .filter(e -> e.isApproved())
                 .mapToDouble(e -> e.getEctsCredits())
                 .sum();
     }
 
     private static double ectsApproved(final Registration registration, final ExecutionYear executionYear) {
         return enrolments(registration, executionYear)
+                .filter(e -> e.isApproved())
                 .mapToDouble(e -> e.getEctsCredits())
                 .sum();
     }
