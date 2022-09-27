@@ -3,6 +3,7 @@ package org.fenixedu.ulisboa.integration.sas.webservices;
 import com.qubit.solution.fenixedu.bennu.webservices.services.server.BennuWebService;
 import com.qubit.solution.fenixedu.integration.cgd.domain.idcards.CgdCard;
 import org.fenixedu.academic.domain.Country;
+import org.fenixedu.academic.domain.Degree;
 import org.fenixedu.academic.domain.Enrolment;
 import org.fenixedu.academic.domain.ExecutionSemester;
 import org.fenixedu.academic.domain.ExecutionYear;
@@ -40,7 +41,8 @@ public class ActiveStudentsWebService extends BennuWebService {
         return registration.isActive()
                 && !registration.getDegreeType().isEmpty()
                 && !registration.getDegree().getDegreeType().getMinor()
-                && !registration.getDegree().getDegreeType().getUnstructured();
+                && !registration.getDegree().getDegreeType().getUnstructured()
+                && registration.getDegree().isActive();
 
     }
 
