@@ -18,10 +18,25 @@
  */
 package pt.ist.fenixedu.integration.api;
 
-import java.text.ParseException;
-import java.util.Collection;
-import java.util.Objects;
-import java.util.UUID;
+import com.google.common.base.Strings;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import org.fenixedu.academic.domain.AlumniIdentityCheckRequest;
+import org.fenixedu.academic.domain.Person;
+import org.fenixedu.academic.domain.candidacy.CandidacySummaryFile;
+import org.fenixedu.academic.domain.candidacy.FirstTimeCandidacyStage;
+import org.fenixedu.academic.domain.candidacy.StudentCandidacy;
+import org.fenixedu.academic.domain.contacts.EmailAddress;
+import org.fenixedu.academic.domain.person.IDDocumentType;
+import org.fenixedu.academic.service.services.candidacy.LogFirstTimeCandidacyTimestamp;
+import org.fenixedu.bennu.core.domain.User;
+import org.fenixedu.bennu.core.rest.BennuRestResource;
+import pt.ist.fenixedu.integration.FenixEduIstIntegrationConfiguration;
+import pt.ist.fenixedu.integration.dto.PersonInformationDTO;
+import pt.ist.fenixedu.integration.dto.PersonInformationFromUniqueCardDTO;
+import pt.ist.fenixframework.Atomic;
+import pt.ist.fenixframework.FenixFramework;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -36,27 +51,10 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-
-import org.fenixedu.academic.domain.AlumniIdentityCheckRequest;
-import org.fenixedu.academic.domain.Person;
-import org.fenixedu.academic.domain.candidacy.CandidacySummaryFile;
-import org.fenixedu.academic.domain.candidacy.FirstTimeCandidacyStage;
-import org.fenixedu.academic.domain.candidacy.StudentCandidacy;
-import org.fenixedu.academic.domain.contacts.EmailAddress;
-import org.fenixedu.academic.domain.person.IDDocumentType;
-import org.fenixedu.academic.service.services.candidacy.LogFirstTimeCandidacyTimestamp;
-import org.fenixedu.bennu.core.domain.User;
-import org.fenixedu.bennu.core.rest.BennuRestResource;
-
-import com.google.common.base.Strings;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import pt.ist.fenixedu.integration.FenixEduIstIntegrationConfiguration;
-import pt.ist.fenixedu.integration.dto.PersonInformationDTO;
-import pt.ist.fenixedu.integration.dto.PersonInformationFromUniqueCardDTO;
-import pt.ist.fenixframework.Atomic;
-import pt.ist.fenixframework.FenixFramework;
+import java.text.ParseException;
+import java.util.Collection;
+import java.util.Objects;
+import java.util.UUID;
 
 @Path("/fenix-ist/ldapSync")
 public class LdapSyncServices extends BennuRestResource {
@@ -189,7 +187,6 @@ public class LdapSyncServices extends BennuRestResource {
             institutionalEmailAddress.setActive(false);
         } else {
             person.setInstitutionalEmailAddressValue(email);
-            person.getInstitutionalEmailAddress().setActive(true);
         }
 
         return Status.OK;
