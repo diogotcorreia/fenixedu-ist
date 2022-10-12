@@ -31,9 +31,14 @@ public class FenixEduIstIntegrationConfiguration {
     @ConfigurationManager(description = "Fenixedu IST Configuration")
     public interface ConfigurationProperties {
 
-        @ConfigurationProperty(key = "pt.ist.fenixedu.integration.scholarThesesToken",
+        @ConfigurationProperty(key = "pt.ist.fenixedu.integration.scholarToken",
                 description = "Token used for scholar authentication")
         public String scholarThesesToken();
+
+
+        @ConfigurationProperty(key = "pt.ist.fenixedu.integration.scholarUsersFile",
+                description = "Path for json file with users")
+        public String scholarUsersFile();
     }
 
     public static FenixEduIstIntegrationConfiguration.ConfigurationProperties getConfiguration() {
