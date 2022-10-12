@@ -1,8 +1,7 @@
 package pt.ist.fenixedu.integration.api;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.*;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.fenixedu.academic.domain.organizationalStructure.Unit;
 import org.fenixedu.academic.domain.phd.*;
@@ -20,10 +19,10 @@ import pt.ist.fenixframework.FenixFramework;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 
-@Path("/_internal/scholar/theses")
+@Path("/_internal/scholar")
 public class FenixScholarThesesApi {
 
     private final String FENIX_PDF = "fenix.pdf";
@@ -95,8 +94,9 @@ public class FenixScholarThesesApi {
     }
 
     @GET
+    @Path("theses")
     @Produces(FenixAPIv1.JSON_UTF8)
-    public String list(@HeaderParam("Authorization") String authorization) {
+    public String listTheses(@HeaderParam("Authorization") String authorization) {
         String token = authorization != null ? authorization.substring(7):"";
         if(FenixEduIstIntegrationConfiguration.getConfiguration().scholarThesesToken().equals(token)) {
             JsonArray infos = new JsonArray();
@@ -275,9 +275,9 @@ public class FenixScholarThesesApi {
 	}
 
     @GET
-    @Path("{id}/download")
+    @Path("theses/{id}/download")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public Response get(@HeaderParam("Authorization") String authorization, @PathParam("id") String id) throws IOException {
+    public Response getThesesFile(@HeaderParam("Authorization") String authorization, @PathParam("id") String id) throws IOException {
         String token = authorization != null ? authorization.substring(7):"";
         if(FenixEduIstIntegrationConfiguration.getConfiguration().scholarThesesToken().equals(token)) {
             DomainObject object = FenixFramework.getDomainObject(id);
@@ -302,9 +302,20 @@ public class FenixScholarThesesApi {
     }
 
 
-    private InputStream devPdf() {
-        return this.getClass().getClassLoader().getResourceAsStream(FENIX_PDF);
+    @GET
+    @Path("users")
+    @Produces(FenixAPIv1.JSON_UTF8)
+    public String getUsers(@HeaderParam("Authorization") String authorization) throws IOException {
+        String token = authorization != null ? authorization.substring(7):"";
+        if(FenixEduIstIntegrationConfiguration.getConfiguration().scholarThesesToken().equals(token)) {
+            File file = new File(FenixEduIstIntegrationConfiguration.getConfiguration().scholarUsersFile());
+            return FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+        }
+        throw new WebApplicationException(Response.Status.UNAUTHORIZED);
     }
 
 
+    private InputStream devPdf() {
+        return this.getClass().getClassLoader().getResourceAsStream(FENIX_PDF);
+    }
 }
