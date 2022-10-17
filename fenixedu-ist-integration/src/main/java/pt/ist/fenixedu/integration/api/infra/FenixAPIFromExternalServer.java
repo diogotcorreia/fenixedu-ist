@@ -18,6 +18,21 @@
  */
 package pt.ist.fenixedu.integration.api.infra;
 
+import javax.ws.rs.ProcessingException;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+import org.fenixedu.commons.i18n.I18N;
+import org.joda.time.DateTime;
+import org.joda.time.Interval;
+import org.joda.time.format.DateTimeFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import pt.ist.fenixedu.integration.FenixEduIstIntegrationConfiguration;
+
 import com.google.common.io.BaseEncoding;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -26,20 +41,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import kong.unirest.Unirest;
-import org.fenixedu.commons.i18n.I18N;
-import org.joda.time.DateTime;
-import org.joda.time.Interval;
-import org.joda.time.format.DateTimeFormat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import pt.ist.fenixedu.integration.FenixEduIstIntegrationConfiguration;
-
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 public class FenixAPIFromExternalServer {
 
@@ -131,7 +132,7 @@ public class FenixAPIFromExternalServer {
     }
 
     public static String getContacts() {
-        JsonObject contactsInfo = new JsonParser().parse(Unirest.get("https://repo.dsi.tecnico.ulisboa.pt/fenixedu/data/-/raw/master/api/contacts.json").asString().getBody()).getAsJsonObject();
+        JsonObject contactsInfo = getInformation(contactsUrl);
         if (contactsInfo.has(I18N.getLocale().toLanguageTag())) {
             return contactsInfo.get(I18N.getLocale().toLanguageTag()).toString();
         }
