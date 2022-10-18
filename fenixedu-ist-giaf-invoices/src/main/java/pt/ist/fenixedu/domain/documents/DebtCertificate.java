@@ -24,6 +24,7 @@ public class DebtCertificate {
     public static void create(final Event event) {
         FinancialDocument.createFinancialDocument(event,
                 reportEntry -> toJson(event, reportEntry),
+                "1d84f9ec-22d8-41f1-9805-36fcf6b2a6f1",
                 "carta-de-liquidacao-at",
                 "Certidao de Divida",
                 json -> "debtCertificate" + event.getExternalId());
