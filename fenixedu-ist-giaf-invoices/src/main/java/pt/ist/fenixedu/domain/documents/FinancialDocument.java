@@ -7,7 +7,6 @@ import org.fenixedu.academic.util.Money;
 import org.fenixedu.commons.i18n.I18N;
 import pt.ist.fenixframework.Atomic;
 import pt.ist.papyrus.PapyrusClient;
-import pt.ist.papyrus.PapyrusConfiguration;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,14 +25,13 @@ public class FinancialDocument extends FinancialDocument_Base {
 
     @Atomic
     public static FinancialDocument createFinancialDocument(final Event event, final Function<ReportEntry, JsonObject> toJson,
+                                               final String teamId,
                                                final String templateId, final String documentType,
                                                final Function<JsonObject, String> toDocumentNumber) {
         final ReportEntry debtEntry = ReportEntry.reportEntryFor(event);
         if (debtEntry != null) {
             final JsonObject json = toJson.apply(debtEntry);
-            final PapyrusClient papyrusClient = new PapyrusClient(
-                    PapyrusConfiguration.getConfiguration().papyrusUrl(),
-                    PapyrusConfiguration.getConfiguration().papyrusToken());
+            final PapyrusClient papyrusClient = new PapyrusClient(templateId);
             final InputStream pdf = papyrusClient.render(templateId, I18N.getLocale(), json);
             try {
                 final byte[] content = IOUtils.toByteArray(pdf);
