@@ -226,7 +226,7 @@ import java.util.stream.Stream;
 import static org.fenixedu.academic.dto.SummariesManagementBean.SummaryType.NORMAL_SUMMARY;
 
 @Path("/fenix/v1")
-public class FenixAPIv1 {
+public class FenixAPIv1 extends FenixAPIv1TestUser {
 
     private static final Logger logger = LoggerFactory.getLogger(FenixAPIv1.class);
 
@@ -291,6 +291,7 @@ public class FenixAPIv1 {
     @Path("person")
     @OAuthEndpoint(PERSONAL_SCOPE)
     public FenixPerson person() {
+        if (isTestUser()) return personTest();
 
         final Person person = getPerson();
         final User user = person.getUser();
