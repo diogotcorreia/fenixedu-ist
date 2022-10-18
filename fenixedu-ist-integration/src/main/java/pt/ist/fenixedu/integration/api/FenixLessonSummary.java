@@ -1,16 +1,14 @@
 package pt.ist.fenixedu.integration.api;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonRawValue;
+import com.google.api.client.repackaged.com.google.common.base.Strings;
 import org.fenixedu.academic.domain.LessonInstance;
 import org.fenixedu.academic.domain.Shift;
 import org.fenixedu.academic.domain.Summary;
 import org.fenixedu.spaces.domain.Space;
 import org.joda.time.DateTime;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonRawValue;
-import com.google.api.client.repackaged.com.google.common.base.Strings;
-
 import pt.ist.fenixedu.integration.api.beans.publico.FenixSpace;
 
 public class FenixLessonSummary {
@@ -18,14 +16,16 @@ public class FenixLessonSummary {
     private String shiftName;
     private String shiftType;
     private String lessonDate;
+    private String lessonEndDate;
     private FenixSpace room;
     private FenixSummary summary;
 
-    public FenixLessonSummary(Shift shift, DateTime lessonDate, Space space, LessonInstance lessonInstance) {
+    public FenixLessonSummary(Shift shift, DateTime lessonDate, DateTime lessonEndDate, Space space, LessonInstance lessonInstance) {
         this.shift = shift.getExternalId();
         this.shiftName = shift.getPresentationName();
         this.shiftType = !shift.getSortedTypes().isEmpty() ? shift.getSortedTypes().first().getFullNameTipoAula() : null;
         this.lessonDate = lessonDate.toString("yyyy-MM-dd HH:mm:ss");
+        this.lessonEndDate = lessonEndDate.toString("yyyy-MM-dd HH:mm:ss");
         this.room = space != null ? new FenixSpace.Room(space) : null;
         if(lessonInstance != null && lessonInstance.getSummary() != null) {
             summary = new FenixSummary(lessonInstance.getSummary());
@@ -70,6 +70,14 @@ public class FenixLessonSummary {
 
     public void setRoom(FenixSpace room) {
         this.room = room;
+    }
+
+    public String getLessonEndDate() {
+        return lessonEndDate;
+    }
+
+    public void setLessonEndDate(String lessonEndDate) {
+        this.lessonEndDate = lessonEndDate;
     }
 
     @JsonInclude(Include.NON_NULL)
@@ -155,5 +163,7 @@ public class FenixLessonSummary {
         public void setReason(String reason) {
             this.reason = reason;
         }
+
     }
+
 }
