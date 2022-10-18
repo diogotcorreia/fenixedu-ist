@@ -126,6 +126,10 @@ public class FenixPerson {
 
         public static class FenixRegistration {
 
+            public FenixRegistration() {
+
+            }
+
             public FenixRegistration(Registration registration) {
                 setName(registration.getDegreeName());
                 setAcronym(registration.getDegree().getSigla());
