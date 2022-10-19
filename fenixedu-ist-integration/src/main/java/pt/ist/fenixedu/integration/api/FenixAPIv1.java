@@ -1649,7 +1649,7 @@ public class FenixAPIv1 extends FenixAPIv1TestUser {
                 lesson.getAllLessonDates().stream().sorted().map(ld -> {
                     final LessonInstance lessonInstance = lesson.getLessonInstanceFor(ld);
                     final HourMinuteSecond time = lesson.getBeginHourMinuteSecond();
-                    final HourMinuteSecond endTime = lessonInstance.getEndTime();
+                    final HourMinuteSecond endTime = lesson.getEndHourMinuteSecond();
                     final TimeOfDay lessonTime = new TimeOfDay(time.getHour(), time.getMinuteOfHour(), time.getSecondOfMinute());
                     final TimeOfDay lessonEndTime = new TimeOfDay(endTime.getHour(), endTime.getMinuteOfHour(), endTime.getSecondOfMinute());
                     return new FenixLessonSummary(shift, ld.toDateTime(lessonTime), ld.toDateTime(lessonEndTime), lesson.getSala(), lessonInstance);
@@ -1780,7 +1780,7 @@ public class FenixAPIv1 extends FenixAPIv1TestUser {
         Lesson lesson = bean.getLesson();
         DateTime lessonDateTime = DateTimeFormat.forPattern(dayHourSecondPattern).parseDateTime(date);
         LessonInstance lessonInstance = lesson.getLessonInstanceFor(lessonDateTime.toYearMonthDay());
-        final HourMinuteSecond endTime = lessonInstance.getEndTime();
+        final HourMinuteSecond endTime = lesson.getEndHourMinuteSecond();
         final TimeOfDay lessonEndTime = new TimeOfDay(endTime.getHour(), endTime.getMinuteOfHour(), endTime.getSecondOfMinute());
         return new FenixLessonSummary(shift, lessonDateTime, lessonDateTime.toYearMonthDay().toDateTime(lessonEndTime), space, lessonInstance);
     }
