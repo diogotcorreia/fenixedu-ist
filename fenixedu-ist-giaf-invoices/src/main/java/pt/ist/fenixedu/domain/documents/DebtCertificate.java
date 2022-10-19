@@ -11,6 +11,7 @@ import org.fenixedu.academic.domain.accounting.EventTemplate;
 import org.fenixedu.academic.domain.accounting.EventType;
 import org.fenixedu.academic.domain.accounting.events.gratuity.GratuityEvent;
 import org.fenixedu.academic.domain.student.Registration;
+import org.fenixedu.academic.domain.student.RegistrationDataByExecutionYear;
 import org.fenixedu.academic.domain.student.Student;
 import org.fenixedu.academic.util.Money;
 import org.fenixedu.bennu.core.json.JsonUtils;
@@ -18,6 +19,7 @@ import org.fenixedu.commons.i18n.I18N;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import pt.ist.fenixedu.giaf.invoices.Utils;
+import pt.ist.fenixframework.FenixFramework;
 
 public class DebtCertificate {
 
@@ -76,7 +78,13 @@ public class DebtCertificate {
         } else if (event instanceof CustomEvent) {
             CustomEvent customEvent = (CustomEvent) event;
             if (EventTemplate.Type.TUITION.name().equals(JsonUtils.get(customEvent.getConfigObject(), "type"))) {
-                final Registration registration = JsonUtils.toDomainObject(customEvent.getConfigObject(), "registration");
+                Registration registration = JsonUtils.toDomainObject(customEvent.getConfigObject(), "registration");
+                if (registration == null) {
+                    final RegistrationDataByExecutionYear dataByExecutionYear = JsonUtils.toDomainObject(customEvent.getConfigObject(), "registrationDataByExecutionYear");
+                    if (FenixFramework.isDomainObjectValid(dataByExecutionYear)) {
+                        registration = dataByExecutionYear.getRegistration();
+                    }
+                }
                 return registration.getDegree().getPresentationName(executionYear);
             }
         }
@@ -92,7 +100,13 @@ public class DebtCertificate {
         } else if (event instanceof CustomEvent) {
             CustomEvent customEvent = (CustomEvent) event;
             if (EventTemplate.Type.TUITION.name().equals(JsonUtils.get(customEvent.getConfigObject(), "type"))) {
-                final Registration registration = JsonUtils.toDomainObject(customEvent.getConfigObject(), "registration");
+                Registration registration = JsonUtils.toDomainObject(customEvent.getConfigObject(), "registration");
+                if (registration == null) {
+                    final RegistrationDataByExecutionYear dataByExecutionYear = JsonUtils.toDomainObject(customEvent.getConfigObject(), "registrationDataByExecutionYear");
+                    if (FenixFramework.isDomainObjectValid(dataByExecutionYear)) {
+                        registration = dataByExecutionYear.getRegistration();
+                    }
+                }
                 scp = registration.getStudentCurricularPlan(executionYear);
             }
         }
