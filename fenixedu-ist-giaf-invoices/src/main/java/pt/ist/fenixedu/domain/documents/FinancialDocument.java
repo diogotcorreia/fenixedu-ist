@@ -31,7 +31,7 @@ public class FinancialDocument extends FinancialDocument_Base {
         final ReportEntry debtEntry = ReportEntry.reportEntryFor(event);
         if (debtEntry != null) {
             final JsonObject json = toJson.apply(debtEntry);
-            final PapyrusClient papyrusClient = new PapyrusClient(templateId);
+            final PapyrusClient papyrusClient = new PapyrusClient();
             final InputStream pdf = papyrusClient.render(templateId, I18N.getLocale(), json);
             try {
                 final byte[] content = IOUtils.toByteArray(pdf);
