@@ -64,6 +64,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -71,6 +72,8 @@ public class Utils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Utils.class);
     private static final String FCT_NIF = "503904040";
+
+    public static Predicate<Party> HAS_VALID_ADDRESS_DATA = person -> true;
 
     public static boolean validate(final ErrorLogConsumer consumer,
                                    final AccountingTransactionDetail detail) {
@@ -165,7 +168,7 @@ public class Utils {
             return false;
         }
 
-        if (!"PT999999990".equals(ssn)) {
+        if (!HAS_VALID_ADDRESS_DATA.test(party) && !"PT999999990".equals(ssn)) {
             final PhysicalAddress address = toAddress(party, ssn.substring(0, 2));
             if (address == null) {
                 logError(consumer, "No Address", event, getUserIdentifier(party), "", country, party, address, null, event);
