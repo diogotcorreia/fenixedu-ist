@@ -84,6 +84,7 @@ public class SapEvent {
     public static final int MAX_SIZE_REGION = 50;
     public static final int MAX_SIZE_POSTAL_CODE = 20;
     private static final int MAX_SIZE_VAT_NUMBER = 20;
+    public static final int DEBT_OFFSET = 60;
     public static final String PROCESS_ID = "006";
     public static final String IST_VAT_NUMBER = "501507930";
     private static final String SIBS_DATE_FORMAT = "yyyy-MM-dd";
@@ -1379,7 +1380,7 @@ public class SapEvent {
             endDate = localDate.plusYears(1);
         } else {
             final ExecutionYear executionYear = Utils.executionYearOf(event);
-            endDate = executionYear.getEndDateYearMonthDay().toLocalDate();
+            endDate = executionYear.getEndDateYearMonthDay().toLocalDate().plusDays(DEBT_OFFSET);
         }
         if (startDate.isAfter(endDate)) {
             throw new Error("The event was created after the end of the Execution Year that is associated with.");
