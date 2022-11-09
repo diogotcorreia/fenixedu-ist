@@ -1538,11 +1538,11 @@ public class SapEvent {
         clientData.addProperty("companyName", externalClient.getCompanyName());
         clientData.addProperty("clientId", externalClient.getClientId());
         clientData.addProperty("country", externalClient.getCountry());
-        clientData.addProperty("street", externalClient.getStreet());
-        clientData.addProperty("city", externalClient.getCity());
-        clientData.addProperty("region", externalClient.getRegion());
-        clientData.addProperty("postalCode", externalClient.getPostalCode());
-        clientData.addProperty("vatNumber", externalClient.getFiscalCountry() + externalClient.getVatNumber());
+        clientData.addProperty("street", Utils.limitFormat(MAX_SIZE_ADDRESS, externalClient.getStreet()));
+        clientData.addProperty("city", Utils.limitFormat(MAX_SIZE_CITY, externalClient.getCity()));
+        clientData.addProperty("region", Utils.limitFormat(MAX_SIZE_REGION, externalClient.getRegion()));
+        clientData.addProperty("postalCode", Utils.limitFormat(MAX_SIZE_POSTAL_CODE, externalClient.getPostalCode()));
+        clientData.addProperty("vatNumber", Utils.limitFormat(MAX_SIZE_VAT_NUMBER,externalClient.getFiscalCountry() + externalClient.getVatNumber()));
         clientData.addProperty("fiscalCountry", externalClient.getFiscalCountry());
         clientData.addProperty("nationality", externalClient.getNationality());
         clientData.addProperty("billingIndicator", externalClient.getBillingIndicator());
