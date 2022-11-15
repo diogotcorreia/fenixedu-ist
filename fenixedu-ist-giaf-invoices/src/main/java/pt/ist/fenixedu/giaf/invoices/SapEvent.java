@@ -496,6 +496,10 @@ public class SapEvent {
         final Money valueToExempt = refundTotal ? invoiceValueWithoutCredits(sapInvoiceRequest) : refundValue;
         final Money valueToRefund = refundTotal ? calculateAmountPayedForInvoice(sapInvoiceRequest) : refundValue;
 
+        if (valueToRefund.isZero() && valueToExempt.isZero()) {
+            return Money.ZERO; //nothing to do here, the invoice is closed with an exemption
+        }
+
         //if the invoice generated debt we have to send a debt credit
         if (isToProcessDebt(event.isGratuity())) {
             registerDebtCredit(EventProcessor.getCreditEntry(valueToExempt), event, true);
