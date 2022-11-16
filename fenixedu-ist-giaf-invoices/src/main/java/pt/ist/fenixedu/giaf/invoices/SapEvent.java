@@ -339,7 +339,8 @@ public class SapEvent {
 
     public SapRequest registerDebt(Money debtFenix, Event event, boolean isNewDate) {
         String clientId = ClientMap.uVATNumberFor(event.getParty());
-        JsonObject data = toJsonDebt(event, debtFenix, clientId, getDocumentDate(event.getWhenOccured(), isNewDate),
+        final JsonObject jsonClient = toJsonClient(event.getParty(), clientId);
+        JsonObject data = toJsonDebt(event, debtFenix, jsonClient, getDocumentDate(event.getWhenOccured(), isNewDate),
                 new DateTime(), true, "NG", true, isNewDate, null);
 
         String documentNumber = getDocumentNumber(data, false);
@@ -395,8 +396,8 @@ public class SapEvent {
                 dispatchDate = justification.getDispatchDate();
             }
         }
-        JsonObject data = toJsonDebtCredit(event, amountToRegister, clientId,
-                documentDate, new DateTime(), dispatchDate, true, "NJ", false, isNewDate, debtRequest);
+        JsonObject data = toJsonDebtCredit(event, amountToRegister, documentDate, new DateTime(), dispatchDate,
+                true, "NJ", false, isNewDate, debtRequest);
         String documentNumber = getDocumentNumber(data, false);
         SapRequest sapRequest =
                 new SapRequest(event, clientId, amountToRegister, documentNumber, SapRequestType.DEBT_CREDIT, Money.ZERO, data);
@@ -982,7 +983,7 @@ public class SapEvent {
         SapEvent sapOriginEvent = new SapEvent(originEvent);
         SapRequest originalPayment = sapOriginEvent.getAdvancementPaymentsFor(partialPayment.getCreditEntry().getId()).findAny()
                 .orElseThrow(() -> new Error("There is no advancement registered for paymentId: " + partialPayment.getCreditEntry().getId()));
-        JsonObject advInPayment = toJsonUseAdvancementInPayment(payment, originalPayment, amountUsed, openInvoice.getDocumentNumber(), isNewDate);
+        JsonObject advInPayment = toJsonUseAdvancementInPayment(payment, originalPayment, amountUsed, openInvoice, isNewDate);
         final SapRequest sapRequest = new SapRequest(event, originalPayment.getClientId(), amountUsed, getDocumentNumber(advInPayment, true),
                 requestType, Money.ZERO, advInPayment);
         sapRequest.setPayment(payment.getTransaction());
@@ -992,15 +993,15 @@ public class SapEvent {
         sapRequest.setAdvancementRequest(originalPayment);
     }
 
-    private JsonObject toJsonUseAdvancementInPayment(final AccountingTransactionDetail payment, final SapRequest originalPayment, final Money amountToUse, final String invoiceNumber, final boolean isNewDate) {
+    private JsonObject toJsonUseAdvancementInPayment(final AccountingTransactionDetail payment, final SapRequest originalPayment, final Money amountToUse, final SapRequest invoiceRequest, final boolean isNewDate) {
         DateTime documentDate = payment.getWhenRegistered();
         if (isNewDate) {
             documentDate = new DateTime();
         }
         JsonObject data =
-                toJson(event, originalPayment.getClientJson(), documentDate, false, false, false, false, false);
+                toJson(event, invoiceRequest.getClientJson(), documentDate, false, false, false, false, false);
 
-        JsonObject paymentDocument = toJsonPaymentDocument(amountToUse, "NP", invoiceNumber, documentDate,
+        JsonObject paymentDocument = toJsonPaymentDocument(amountToUse, "NP", invoiceRequest.getDocumentNumber(), documentDate,
                 "OU", getPaymentMethodReference(payment), SAFTPTSettlementType.NN.toString(), true);
         paymentDocument.addProperty("excessPayment", amountToUse.negate().toPlainString());//the payment amount must be zero
         paymentDocument.addProperty("isToCreditTotal", true);
@@ -1353,9 +1354,8 @@ public class SapEvent {
         return json;
     }
 
-    private JsonObject toJsonDebt(Event event, Money debtFenix, String clientId, DateTime documentDate, DateTime entryDate,
+    private JsonObject toJsonDebt(Event event, Money debtFenix, JsonObject clientData, DateTime documentDate, DateTime entryDate,
                                   boolean isDebtRegistration, String docType, boolean isToDebit, boolean isNewDate, String originalMetadata) {
-        final JsonObject clientData = toJsonClient(event.getParty(), clientId);
         JsonObject json = toJson(event, clientData, documentDate, isDebtRegistration, isNewDate, false, false, false);
         JsonObject workDocument =
                 toJsonWorkDocument(documentDate, entryDate, debtFenix, docType, isToDebit, new DateTime(Utils.getDueDate(event)));
@@ -1392,7 +1392,7 @@ public class SapEvent {
         return new LocalDate[]{startDate, endDate};
     }
 
-    private JsonObject toJsonDebtCredit(Event event, Money debtFenix, String clientId, DateTime documentDate, DateTime entryDate,
+    private JsonObject toJsonDebtCredit(Event event, Money debtFenix, DateTime documentDate, DateTime entryDate,
                                         LocalDate dispatchDate, boolean isDebtRegistration, String docType, boolean isToDebit, boolean isNewDate, SapRequest debtRequest) {
         JsonObject request = new JsonParser().parse(debtRequest.getRequest()).getAsJsonObject();
         String metadata = request.get("workingDocument").getAsJsonObject().get("metadata").getAsString();
@@ -1405,7 +1405,7 @@ public class SapEvent {
         }
 
         metadata = metadata.replace("}", ", \"Despacho\":\"" + dispatchDate.toString("yyyy-MM-dd") + "\"}");
-        JsonObject json = toJsonDebt(event, debtFenix, clientId, documentDate, entryDate, isDebtRegistration, docType, isToDebit,
+        JsonObject json = toJsonDebt(event, debtFenix, debtRequest.getClientJson(), documentDate, entryDate, isDebtRegistration, docType, isToDebit,
                 isNewDate, metadata);
         JsonObject workingDocument = json.get("workingDocument").getAsJsonObject();
         workingDocument.addProperty("workOriginDocNumber", debtRequest.getDocumentNumber());
