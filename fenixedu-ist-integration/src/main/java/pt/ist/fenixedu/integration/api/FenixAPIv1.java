@@ -144,6 +144,7 @@ import org.slf4j.LoggerFactory;
 import pt.ist.fenixedu.contracts.domain.Employee;
 import pt.ist.fenixedu.contracts.domain.accessControl.ActiveEmployees;
 import pt.ist.fenixedu.contracts.domain.accessControl.ActiveGrantOwner;
+import pt.ist.fenixedu.contracts.domain.accessControl.ActiveResearchers;
 import pt.ist.fenixedu.contracts.domain.organizationalStructure.Contract;
 import pt.ist.fenixedu.contracts.domain.util.CategoryType;
 import pt.ist.fenixedu.integration.FenixEduIstIntegrationConfiguration;
@@ -1128,15 +1129,21 @@ public class FenixAPIv1 extends FenixAPIv1TestUser {
 
     private static FenixDepartment.FenixDepartmentMember getFenixDepartmentEmployee(Department department, Person person,
             AcademicInterval interval) {
-        FenixDepartment.FenixDepartmentMember member = getFenixDepartmentMember(person);
         CategoryType type =
-                ActiveGrantOwner.isGrantOwner(person.getEmployee()) ? CategoryType.GRANT_OWNER : CategoryType.EMPLOYEE;
-        String area = getPersonDepartmentArea(person.getEmployee(), interval, false, department.getDepartmentUnit()).getNameI18n()
-                .getContent();
-        member.setRole(localizedName(type));
-        member.setCategory("");
-        member.setArea(area);
-        return member;
+                ActiveGrantOwner.isGrantOwner(person.getEmployee()) ? CategoryType.GRANT_OWNER : (new ActiveEmployees()
+                        .isMember(person.getUser()) ? CategoryType.EMPLOYEE : (new ActiveResearchers()
+                                .isMember(person.getUser()) ? CategoryType.RESEARCHER : null));
+        if (type != null) {
+            FenixDepartment.FenixDepartmentMember member = getFenixDepartmentMember(person);
+
+            String area = getPersonDepartmentArea(person.getEmployee(), interval, false, department.getDepartmentUnit())
+                    .getNameI18n().getContent();
+            member.setRole(localizedName(type));
+            member.setCategory("");
+            member.setArea(area);
+            return member;
+        }
+        return null;
     }
 
     private static FenixDepartment getFenixDepartment(Department department, AcademicInterval interval) {
@@ -1147,13 +1154,15 @@ public class FenixAPIv1 extends FenixAPIv1TestUser {
         Set<Person> employeePeople = employees.stream().filter(Objects::nonNull).map(Employee::getPerson).collect(Collectors.toSet());
         //XXX Teachers are obtained separately through their TeacherAuthorizations so external teachers are taken into account
         //XXX Internal teachers with missing authorizations are present in the employee stream and are displayed in the same way as others
-        List<Teacher> teachers = department.getAllTeachers(interval);
+        List<Teacher> teachers = department.getTeacherAuthorizationStream()
+                .filter(a -> a.getExecutionSemester().getAcademicInterval().equals(interval))
+                .map(TeacherAuthorization::getTeacher).distinct().collect(Collectors.toList());
         Set<Person> teacherPeople = teachers.stream().map(Teacher::getPerson).collect(Collectors.toSet());
         employeePeople.removeAll(teacherPeople);
 
         List<FenixDepartment.FenixDepartmentMember> members = new ArrayList<>();
         teacherPeople.stream().map(p -> getFenixDepartmentTeacher(department, p, interval)).forEach(members::add);
-        employeePeople.stream().map(p -> getFenixDepartmentEmployee(department, p, interval)).forEach(members::add);
+        employeePeople.stream().map(p -> getFenixDepartmentEmployee(department, p, interval)).filter(Objects::nonNull).forEach(members::add);
 
         return new FenixDepartment(name, acronym, members);
     }
