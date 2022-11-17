@@ -84,7 +84,7 @@ public class SapEvent {
     public static final int MAX_SIZE_REGION = 50;
     public static final int MAX_SIZE_POSTAL_CODE = 20;
     private static final int MAX_SIZE_VAT_NUMBER = 20;
-    public static final int DEBT_OFFSET = 60;
+    public static final int DEBT_OFFSET = 90;
     public static final String PROCESS_ID = "006";
     public static final String IST_VAT_NUMBER = "501507930";
     private static final String SIBS_DATE_FORMAT = "yyyy-MM-dd";
