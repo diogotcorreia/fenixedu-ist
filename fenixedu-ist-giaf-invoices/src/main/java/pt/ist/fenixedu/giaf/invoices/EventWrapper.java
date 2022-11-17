@@ -30,7 +30,7 @@ public class EventWrapper {
         return event.getSapRequestSet().stream().allMatch(r -> r.getIntegrated())
                 && allAdvancementFromRefundSapIntegration(event)
                 && (needsProcessingSap(event) || needsToProcessPayments(event))
-                && Utils.validate(consumer, event);
+                && Utils.validateNonClientData(consumer, event);
     }
 
     public final Event event;

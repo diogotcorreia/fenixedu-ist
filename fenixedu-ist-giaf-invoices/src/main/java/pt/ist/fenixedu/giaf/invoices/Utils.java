@@ -79,9 +79,6 @@ public class Utils {
                                    final AccountingTransactionDetail detail) {
         final AccountingTransaction transaction = detail.getTransaction();
         final Event event = transaction.getEvent();
-        if (!validate(consumer, event)) {
-            return false;
-        }
         try {
             transaction.getAmountWithAdjustment().getAmount();
         } catch (final DomainException ex) {
@@ -113,7 +110,7 @@ public class Utils {
         return true;
     }
 
-    public static boolean validate(final ErrorLogConsumer consumer, final Event event) {
+    public static boolean validateNonClientData(final ErrorLogConsumer consumer, final Event event) {
         if (event instanceof ExternalScholarshipGratuityContributionEvent) {
             return false;
         }
@@ -148,17 +145,45 @@ public class Utils {
             return false;
         }
 
+        final SimpleImmutableEntry<String, String> articleCode = SapEvent.mapToProduct(event, eventDescription, false, false, false, false);
+        if (articleCode == null) {
+            if (eventDescription.indexOf("Pagamento da resid") >= 0) {
+                logError(consumer, "No Article Code - Residence", event, null, "", null, null, null, null, event);
+            }
+            return false;
+        }
+
+        final BigDecimal amount = originalAmountToPay.getAmount();
+        //final BigDecimal amount = event.getOriginalAmountToPay().getAmount();
+        if (amount.signum() <= 0) {
+            if (event.isCancelled()) {
+                // consumer.accept(detail, "Canceled Transaction", detail.getExternalId());
+                return false;
+            } else {
+                //consumer.accept(t, "Zero Value For Transaction", event.getExternalId());
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean validateClientData(final ErrorLogConsumer consumer, final Event event) {
+        final Party party = event.getParty();
+
         final Country country = party.getCountry();
         if (country == null) {
             logError(consumer, "Has no country", event, getUserIdentifier(party), "", null, party, null, null, event);
             return false;
         }
 
-        final SimpleImmutableEntry<String, String> articleCode = SapEvent.mapToProduct(event, eventDescription, false, false, false, false);
-        if (articleCode == null) {
-            if (eventDescription.indexOf("Pagamento da resid") >= 0) {
-                logError(consumer, "No Article Code - Residence", event, null, "", null, null, null, null, event);
-            }
+        final Money originalAmountToPay;
+        try {
+            originalAmountToPay = event.getOriginalAmountToPay();
+        } catch (final DomainException ex) {
+            logError(consumer, "Unable to Determine Amount: " + ex.getLocalizedMessage(), event, getUserIdentifier(party), "", null, party, null, null, event);
+            return false;
+        } catch (final NullPointerException ex) {
+            logError(consumer, "Unable to Determine Amount: " + ex.getLocalizedMessage(), event, getUserIdentifier(party), "", null, party, null, null, event);
             return false;
         }
 
@@ -185,18 +210,6 @@ public class Utils {
                             address, countryOfAddress, event);
                     return false;
                 }
-            }
-        }
-
-        final BigDecimal amount = originalAmountToPay.getAmount();
-        //final BigDecimal amount = event.getOriginalAmountToPay().getAmount();
-        if (amount.signum() <= 0) {
-            if (event.isCancelled()) {
-                // consumer.accept(detail, "Canceled Transaction", detail.getExternalId());
-                return false;
-            } else {
-                //consumer.accept(t, "Zero Value For Transaction", event.getExternalId());
-                return false;
             }
         }
         return true;

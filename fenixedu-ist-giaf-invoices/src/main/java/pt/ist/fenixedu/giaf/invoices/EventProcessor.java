@@ -143,13 +143,18 @@ public class EventProcessor {
 
             final EventWrapper eventWrapper = new EventWrapper(event, errorLog, true);
 
-            sapEvent.updateInvoiceWithNewClientData();
+            if (!sapEvent.updateInvoiceWithNewClientData(errorLog)) {
+                return;
+            }
 
             final Money debtFenix = eventWrapper.debt;
             final Money invoiceSap = sapEvent.getInvoiceAmount();
 
             if (debtFenix.isPositive()) {
                 if (invoiceSap.isZero()) {
+                    if (!Utils.validateClientData(errorLog, event)) {
+                        return;
+                    }
                     sapEvent.registerInvoice(debtFenix, event, eventWrapper.isGratuity(), false);
                 } else if (invoiceSap.isNegative()) {
                     logError(event, errorLog, elogger, "A dívida no SAP é negativa");
@@ -162,6 +167,10 @@ public class EventProcessor {
                         && !sapEvent.hasPayment(accountingEntry.getId())
                         && accountingEntry.getCreated().isAfter(EventWrapper.SAP_TRANSACTIONS_THRESHOLD)) {
                     final Payment payment = (Payment) accountingEntry;
+                    if ((payment.getUsedAmountInInterests().signum() > 0 || payment.getUsedAmountInFines().signum() > 0)
+                        && !Utils.validateClientData(errorLog, event)) {
+                        return;
+                    }
 
                     if (offsetPayments && payment.getCreated().plusDays(PAYMENT_OFFSET).isAfterNow()) {
                         return;
@@ -209,6 +218,7 @@ public class EventProcessor {
             calculator.getPayments().filter(p -> !sapEvent.hasPayment(p.getId()) && !sapEvent.hasCredit(p.getId())
                     && p.getCreated().isAfter(EventWrapper.SAP_TRANSACTIONS_THRESHOLD))
                     .filter(p -> !offsetPayments || p.getCreated().plusDays(PAYMENT_OFFSET).isBeforeNow())
+                    .filter(p -> Utils.validateClientData(errorLog, event))
                     .forEach(p -> sapEvent.registerPastPayment(p));
         }
     }
