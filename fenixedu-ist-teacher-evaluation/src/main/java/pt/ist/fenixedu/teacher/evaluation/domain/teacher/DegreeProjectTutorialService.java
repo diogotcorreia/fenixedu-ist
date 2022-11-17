@@ -104,7 +104,8 @@ public class DegreeProjectTutorialService extends DegreeProjectTutorialService_B
     }
 
     public BigDecimal getDegreeProjectTutorialServiceCredits() {
-        if (getAttend().getEnrolment() != null && getAttend().getEnrolment().isApproved()) {
+        if (getAttend().getEnrolment() != null && getAttend().getEnrolment().isApproved()
+            && getAttend().getExecutionCourse().getEctsCredits() != null) {
             return new BigDecimal((((double) getPercentageValue()) / 100)
                     * (getAttend().getExecutionCourse().getEctsCredits() / 60));
         }
