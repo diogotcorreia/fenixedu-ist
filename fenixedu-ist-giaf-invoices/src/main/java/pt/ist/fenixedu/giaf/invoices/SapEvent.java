@@ -306,27 +306,31 @@ public class SapEvent {
         getFilteredSapRequestStream().forEach(r -> r.setIgnore(true));
     }
 
-    public void updateInvoiceWithNewClientData() {
-        for (final SapRequest sapRequest : getFilteredSapRequestStream().filter(r -> !r.isInitialization()).collect(Collectors.toSet())) {
-            updateInvoiceWithNewClientData(sapRequest);
-        }
+    public boolean updateInvoiceWithNewClientData(final ErrorLogConsumer errorLog) {
+        return getFilteredSapRequestStream()
+                .filter(r -> !r.isInitialization())
+                .allMatch(r -> updateInvoiceWithNewClientData(errorLog, r));
     }
 
-    private void updateInvoiceWithNewClientData(final SapRequest sapRequest) {
+    private boolean updateInvoiceWithNewClientData(final ErrorLogConsumer errorLog, final SapRequest sapRequest) {
         final SapRequestType requestType = sapRequest.getRequestType();
         if (requestType != SapRequestType.INVOICE) {
-            return;
+            return true;
         }
         if (sapRequest.isReferencedByOtherRequest()) {
-            return;
+            return true;
         }
         final String clientId = ClientMap.uVATNumberFor(event.getParty());
         final String sapRequestClientId = sapRequest.getClientId();
         if (clientId.equals(sapRequestClientId)) {
-            return;
+            return true;
         }
         if (SapRoot.getInstance().getExternalClientSet().stream().map(c -> c.getClientId()).anyMatch(s -> s.equals(sapRequestClientId))) {
-            return;
+            return true;
+        }
+
+        if (!Utils.validateClientData(errorLog, sapRequest.getEvent())) {
+            return false;
         }
 
         final Money invoiceValue = sapRequest.getValue();
@@ -335,6 +339,7 @@ public class SapEvent {
         creditRequest.setIgnore(true);
 
         registerInvoicePlain(invoiceValue, clientId);
+        return true;
     }
 
     public SapRequest registerDebt(Money debtFenix, Event event, boolean isNewDate) {
