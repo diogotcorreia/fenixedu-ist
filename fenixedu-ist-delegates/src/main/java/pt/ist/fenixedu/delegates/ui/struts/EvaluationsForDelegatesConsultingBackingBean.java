@@ -21,6 +21,7 @@ package pt.ist.fenixedu.delegates.ui.struts;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +42,8 @@ import org.fenixedu.academic.domain.ExecutionCourse;
 import org.fenixedu.academic.domain.ExecutionDegree;
 import org.fenixedu.academic.domain.ExecutionSemester;
 import org.fenixedu.academic.domain.ExecutionYear;
+import org.fenixedu.academic.domain.OccupationPeriod;
+import org.fenixedu.academic.domain.OccupationPeriodType;
 import org.fenixedu.academic.domain.Project;
 import org.fenixedu.academic.domain.WrittenEvaluation;
 import org.fenixedu.academic.ui.faces.bean.base.FenixBackingBean;
@@ -329,39 +332,36 @@ public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBe
     public Date getBeginDate() {
         final ExecutionSemester executionSemester = getExecutionPeriod();
         final DegreeCurricularPlan degreeCurricularPlan = getDegreeCurricularPlan();
+
         final ExecutionYear executionYear = executionSemester.getExecutionYear();
-        for (final ExecutionDegree executionDegree : executionYear.getExecutionDegreesSet()) {
-            if (executionDegree.getDegreeCurricularPlan() == degreeCurricularPlan) {
-                if (executionSemester.getSemester().intValue() == 1 && executionDegree.getPeriodLessonsFirstSemester() != null) {
-                    return executionDegree.getPeriodLessonsFirstSemester().getStart();
-                } else if (executionSemester.getSemester().intValue() == 2
-                        && executionDegree.getPeriodLessonsSecondSemester() != null) {
-                    return executionDegree.getPeriodLessonsSecondSemester().getStart();
-                } else {
-                    return executionSemester.getBeginDate();
-                }
-            }
-        }
-        return null;
+
+        return degreeCurricularPlan.getExecutionDegreesSet().stream()
+                .filter(degree -> degree.getExecutionYear() == executionYear)
+                .findAny()
+                .flatMap(executionDegree ->
+                        executionDegree.getPeriods(OccupationPeriodType.LESSONS, executionSemester.getSemester())
+                        .map(OccupationPeriod::getStart)
+                        .min(Comparator.naturalOrder())
+                )
+                .orElseGet(executionSemester::getBeginDate);
     }
 
     public Date getEndDate() {
         final ExecutionSemester executionSemester = getExecutionPeriod();
         final DegreeCurricularPlan degreeCurricularPlan = getDegreeCurricularPlan();
+
         final ExecutionYear executionYear = executionSemester.getExecutionYear();
-        for (final ExecutionDegree executionDegree : executionYear.getExecutionDegreesSet()) {
-            if (executionDegree.getDegreeCurricularPlan() == degreeCurricularPlan) {
-                if (executionSemester.getSemester().intValue() == 1 && executionDegree.getPeriodExamsFirstSemester() != null) {
-                    return executionDegree.getPeriodExamsFirstSemester().getEnd();
-                } else if (executionSemester.getSemester().intValue() == 2
-                        && executionDegree.getPeriodExamsSecondSemester() != null) {
-                    return executionDegree.getPeriodExamsSecondSemester().getEnd();
-                } else {
-                    return executionSemester.getEndDate();
-                }
-            }
-        }
-        return null;
+
+        return degreeCurricularPlan.getExecutionDegreesSet().stream()
+                .filter(degree -> degree.getExecutionYear() == executionYear)
+                .findAny()
+                .flatMap(executionDegree ->
+                        executionDegree.getPeriods(OccupationPeriodType.EXAMS, executionSemester.getSemester())
+                        .map(OccupationPeriod::getLastOccupationPeriodOfNestedPeriods)
+                        .map(OccupationPeriod::getEnd)
+                        .max(Comparator.naturalOrder())
+                )
+                .orElseGet(executionSemester::getEndDate);
     }
 
 }
