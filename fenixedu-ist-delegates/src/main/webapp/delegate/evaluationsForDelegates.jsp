@@ -41,27 +41,32 @@
 		<h:outputText rendered="#{empty evaluationsForDelegates.degree.mostRecentDegreeCurricularPlan}" value="<p><em>#{bundleApplication['error.curricularPlanHasNoExecutionDegreesInNotClosedYears']}</em></p>" escape="false"/>
 
 		<h:panelGroup rendered="#{!empty evaluationsForDelegates.degree.mostRecentDegreeCurricularPlan}">
-			<h:outputText value="<p>#{delegatesBundle['label.delegates.evaluations.curricularPlan']}: " escape="false"/>
-				<h:selectOneMenu id="degreeCurricularPlanID" value="#{evaluationsForDelegates.degreeCurricularPlanID}"
-						onchange="this.form.submit();">
-					<f:selectItems value="#{evaluationsForDelegates.degreeCurricularPlanSelectItems}"/>
-				</h:selectOneMenu>
-			<h:outputText value="</p>" escape="false"/>
+			<h:panelGrid styleClass="tstyle5" columns="2">
+				<h:outputText value="#{delegatesBundle['label.delegates.evaluations.curricularPlan']}: "/>
+				<h:panelGroup>
+					<h:selectOneMenu id="degreeCurricularPlanID" value="#{evaluationsForDelegates.degreeCurricularPlanID}"
+							onchange="this.form.submit();">
+						<f:selectItems value="#{evaluationsForDelegates.degreeCurricularPlanSelectItems}"/>
+					</h:selectOneMenu>
+				</h:panelGroup>
 
-			<h:outputText value="<p>#{delegatesBundle['label.delegates.evaluations.execution.period']}: " escape="false"/>
-				<h:selectOneMenu id="executionPeriodID" value="#{evaluationsForDelegates.executionPeriodID}"
-						onchange="this.form.submit();">
-					<f:selectItems value="#{evaluationsForDelegates.executionPeriodSelectItems}"/>
-				</h:selectOneMenu>
-			<h:outputText value="</p>" escape="false"/>
+				<h:outputText value="#{delegatesBundle['label.delegates.evaluations.execution.period']}: "/>
+				<h:panelGroup>
+					<h:selectOneMenu id="executionPeriodID" value="#{evaluationsForDelegates.executionPeriodID}"
+							onchange="this.form.submit();">
+						<f:selectItems value="#{evaluationsForDelegates.executionPeriodSelectItems}"/>
+					</h:selectOneMenu>
+				</h:panelGroup>
 
-			<h:outputText value="<p>#{delegatesBundle['label.delegates.evaluations.curricular.year']}: " escape="false"/>
-				<h:selectOneMenu id="curricularYearID" value="#{evaluationsForDelegates.curricularYearID}"
-						onchange="this.form.submit();">
-					<f:selectItem itemLabel="#{delegatesBundle['label.delegates.evaluations.allCurricularYears']}" itemValue=""/>
-					<f:selectItems value="#{evaluationsForDelegates.curricularYearSelectItems}"/>
-				</h:selectOneMenu>
-			<h:outputText value="</p>" escape="false"/>
+				<h:outputText value="#{delegatesBundle['label.delegates.evaluations.curricular.year']}: "/>
+				<h:panelGroup>
+					<h:selectOneMenu id="curricularYearID" value="#{evaluationsForDelegates.curricularYearID}"
+							onchange="this.form.submit();">
+						<f:selectItem itemLabel="#{delegatesBundle['label.delegates.evaluations.allCurricularYears']}" itemValue=""/>
+						<f:selectItems value="#{evaluationsForDelegates.curricularYearSelectItems}"/>
+					</h:selectOneMenu>
+				</h:panelGroup>
+			</h:panelGrid>
 
 			<h:outputText value="<br/>" escape="false"/>
 
