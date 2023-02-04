@@ -25,10 +25,10 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import javax.faces.context.FacesContext;
 import javax.faces.model.SelectItem;
 
 import org.apache.struts.util.MessageResources;
@@ -190,55 +190,27 @@ public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBe
         return mostRecentExecutionPeriod;
     }
 
-    private ExecutionYear getExecutionYear() {
-        return getExecutionPeriod() == null ? null : getExecutionPeriod().getExecutionYear();
-    }
-
-    public String getDegreeName() {
-        final Locale locale = FacesContext.getCurrentInstance().getViewRoot().getLocale();
-        return locale.getLanguage().equals(Locale.ENGLISH.getLanguage()) ? getDegree().getNameFor(getExecutionYear()).getContent(
-                org.fenixedu.academic.util.LocaleUtils.EN) : getDegree().getNameFor(getExecutionYear()).getContent(org.fenixedu.academic.util.LocaleUtils.PT);
-    }
-
     public List<SelectItem> getDegreeCurricularPlanSelectItems() {
-        final List<SelectItem> degreeCurricularPlanSelectItems = new ArrayList<SelectItem>();
-
-        final Degree degree = getDegree();
-        if (degree != null) {
-            for (final DegreeCurricularPlan degreeCurricularPlan : degree.getActiveDegreeCurricularPlans()) {
-                degreeCurricularPlanSelectItems.add(new SelectItem(degreeCurricularPlan.getExternalId(), degreeCurricularPlan
-                        .getName()));
-            }
-        }
-
-        return degreeCurricularPlanSelectItems;
+        return getDegree().getActiveDegreeCurricularPlans().stream()
+                .sorted(DegreeCurricularPlan.COMPARATOR_BY_PRESENTATION_NAME)
+                .map(degreeCurricularPlan -> new SelectItem(degreeCurricularPlan.getExternalId(), degreeCurricularPlan.getPresentationName()))
+                .collect(Collectors.toList());
     }
 
     public List<SelectItem> getExecutionPeriodSelectItems() {
-        final List<SelectItem> executionPeriodSelectItems = new ArrayList<SelectItem>();
-
         final DegreeCurricularPlan degreeCurricularPlan = getDegreeCurricularPlan();
-        for (final ExecutionDegree executionDegree : degreeCurricularPlan.getExecutionDegreesSet()) {
-            final ExecutionYear executionYear = executionDegree.getExecutionYear();
-            for (final ExecutionSemester executionSemester : executionYear.getExecutionPeriodsSet()) {
-                if (executionSemester.getState() != PeriodState.CLOSED) {
-                    executionPeriodSelectItems.add(new SelectItem(executionSemester.getExternalId(), executionSemester.getName()
-                            + " " + executionYear.getYear()));
-                }
-            }
-        }
-
-        return executionPeriodSelectItems;
+        return degreeCurricularPlan.getExecutionDegreesSet().stream()
+                .flatMap(degree -> degree.getExecutionYear().getExecutionPeriodsSet().stream())
+                .sorted(ExecutionSemester.COMPARATOR_BY_SEMESTER_AND_YEAR.reversed())
+                .map(period -> new SelectItem(period.getExternalId(), period.getQualifiedName()))
+                .collect(Collectors.toList());
     }
 
     public List<SelectItem> getCurricularYearSelectItems() {
-        final List<SelectItem> curricularYearSelectItems = new ArrayList<SelectItem>();
-
-        for (Integer curricularYear : getDegree().buildFullCurricularYearList()) {
-            curricularYearSelectItems.add(new SelectItem(curricularYear, String.valueOf(curricularYear)));
-        }
-
-        return curricularYearSelectItems;
+        return IntStream.rangeClosed(1, getDegreeCurricularPlan().getDurationInYears())
+                .boxed()
+                .map(curricularYear -> new SelectItem(curricularYear, String.valueOf(curricularYear)))
+                .collect(Collectors.toList());
     }
 
     public List<CalendarLink> getCalendarLinks() {

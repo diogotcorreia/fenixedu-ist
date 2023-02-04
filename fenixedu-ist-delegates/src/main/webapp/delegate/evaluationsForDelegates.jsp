@@ -33,11 +33,6 @@
 
 	<h:form>
 		<h:outputText escape="false" value="<input alt='input.degreeID' id='degreeID' name='degreeID' type='hidden' value='#{evaluationsForDelegates.degreeID}'/>"/>
-		<%--
-		<h:outputText value="<em><p class='mtop1 mbottom1'>" escape="false"/>
-		<h:outputText value="#{evaluationsForDelegates.degreeName}"/>
-		<h:outputText value="</p></em>" escape="false"/>
-		--%>
 
 		<h:outputText value="<h2>" escape="false"/>
 		<h:outputText value="#{delegatesBundle['label.delegates.degreeEvaluations']}"/>
