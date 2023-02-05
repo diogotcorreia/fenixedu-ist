@@ -21,14 +21,19 @@ package pt.ist.fenixedu.delegates.ui.struts;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import javax.faces.event.ValueChangeEvent;
 import javax.faces.model.SelectItem;
 
 import org.apache.struts.util.MessageResources;
@@ -52,9 +57,8 @@ import org.fenixedu.academic.util.Bundle;
 import org.fenixedu.academic.util.PeriodState;
 import org.fenixedu.commons.i18n.I18N;
 
+import pt.ist.fenixframework.DomainObject;
 import pt.ist.fenixframework.FenixFramework;
-
-import com.google.common.base.Strings;
 
 public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBean {
 
@@ -63,47 +67,78 @@ public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBe
     private static final DateFormat hourFormat = new SimpleDateFormat("HH:mm");
 
     private String degreeID;
-
-    private String degreeCurricularPlanID;
-
-    private String executionPeriodID;
-
-    private String curricularYearID;
-
     private Degree degree;
+
+    private Collection<DegreeCurricularPlan> degreeCurricularPlanOptions;
+    private Collection<ExecutionSemester> executionSemesterOptions;
+    private Collection<CurricularYear> curricularYearOptions;
+
+    private DegreeCurricularPlan selectedDegreeCurricularPlan;
+    private ExecutionSemester selectedExecutionSemester;
+    private CurricularYear selectedCurricularYear;
+
+    private String getViewStateAttribute(String attributeName) {
+        return (String) getViewState().getAttribute(attributeName);
+    }
 
     public String getDegreeID() {
         return (degreeID == null) ? degreeID = getAndHoldStringParameter("degreeID") : degreeID;
     }
 
     public String getDegreeCurricularPlanID() {
-        if (degreeCurricularPlanID == null) {
-            degreeCurricularPlanID = getAndHoldStringParameter("degreeCurricularPlanID");
-            if (degreeCurricularPlanID == null) {
-                degreeCurricularPlanID = getMostRecentDegreeCurricularPlan().getExternalId();
-            }
+        String id = getViewStateAttribute("degreeCurricularPlanID");
+        if (id == null) {
+            id = getMostRecentDegreeCurricularPlan().getExternalId();
+            setDegreeCurricularPlanID(id);
         }
-        return degreeCurricularPlanID;
+        return id;
     }
 
     public String getExecutionPeriodID() {
-        if (executionPeriodID == null || !contains(getExecutionPeriodSelectItems(), executionPeriodID)) {
-            executionPeriodID = getAndHoldStringParameter("executionPeriodID");
-            if (executionPeriodID == null) {
-                ExecutionSemester currentExecutionPeriod = ExecutionSemester.readActualExecutionSemester();
-                ExecutionDegree currentExecutionDegree =
-                        getDegreeCurricularPlan().getExecutionDegreeByYear(currentExecutionPeriod.getExecutionYear());
-
-                executionPeriodID =
-                        (currentExecutionDegree != null) ? currentExecutionPeriod.getExternalId() : getMostRecentExecutionPeriod()
-                                .getExternalId();
-            }
+        String id = getViewStateAttribute("executionPeriodID");
+        if (id == null) {
+            id = getCurrentOrMostRecentExecutionPeriod().getExternalId();
+            setExecutionPeriodID(id);
         }
-        return executionPeriodID;
+        return id;
     }
 
     public String getCurricularYearID() {
-        return (curricularYearID == null) ? curricularYearID = getAndHoldStringParameter("curricularYearID") : curricularYearID;
+        String id = getViewStateAttribute("curricularYearID");
+        return id == null ? "" : id;
+    }
+
+    private Collection<DegreeCurricularPlan> getDegreeCurricularPlanOptions() {
+        if (degreeCurricularPlanOptions == null) {
+            degreeCurricularPlanOptions = getDegree()
+                    .getActiveDegreeCurricularPlans()
+                    .stream()
+                    .sorted(DegreeCurricularPlan.COMPARATOR_BY_PRESENTATION_NAME)
+                    .collect(Collectors.toList());
+        }
+        return degreeCurricularPlanOptions;
+    }
+
+    private Collection<ExecutionSemester> getExecutionSemesterOptions() {
+        if (executionSemesterOptions == null) {
+            executionSemesterOptions = getDegreeCurricularPlan()
+                    .getExecutionDegreesSet()
+                    .stream()
+                    .flatMap(degree -> degree.getExecutionYear().getExecutionPeriodsSet().stream())
+                    .sorted(ExecutionSemester.COMPARATOR_BY_SEMESTER_AND_YEAR.reversed())
+                    .collect(Collectors.toList());
+        }
+        return executionSemesterOptions;
+    }
+
+    private Collection<CurricularYear> getCurricularYearOptions() {
+        if (curricularYearOptions == null) {
+            curricularYearOptions = IntStream.rangeClosed(1, getDegreeCurricularPlan().getDurationInYears())
+                    .boxed()
+                    .map(CurricularYear::readByYear)
+                    .collect(Collectors.toList());
+        }
+        return curricularYearOptions;
     }
 
     public Degree getDegree() {
@@ -113,55 +148,83 @@ public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBe
         return degree;
     }
 
-    public DegreeCurricularPlan getDegreeCurricularPlan() {
-        final Degree degree = getDegree();
-        final String degreeCurricularPlanID = getDegreeCurricularPlanID();
-        if (degree != null && degreeCurricularPlanID != null) {
-            for (final DegreeCurricularPlan degreeCurricularPlan : degree.getDegreeCurricularPlansSet()) {
-                if (degreeCurricularPlanID.equals(degreeCurricularPlan.getExternalId())) {
-                    return degreeCurricularPlan;
-                }
-            }
+    /**
+     * Helper function to validate selected option against available options, calculating the default if the value
+     * is not set, or isn't contained in the available options.
+     * The result of the function is saved, so repeated calls don't have to compare to the available options list again,
+     * that is, the result is memoized.
+     *
+     * @param selected The currently selected (memoized) object
+     * @param selectedId The ID selected in the select form field
+     * @param options The available options for this field
+     * @param defaultSupplier A supplier for the default option for this field
+     * @param setSelectedId The setter for this form field
+     * @return The (memoized) selected object, that may or may not be the same as the selected argument.
+     * @param <T> The type of the selected object. Must be a DomainObject.
+     */
+    private <T extends DomainObject> T getLazySelectedObjectFromOptions(T selected, String selectedId, Collection<T> options,
+                                                                        Supplier<T> defaultSupplier, Consumer<String> setSelectedId) {
+        if (selected != null && selected.getExternalId().equals(selectedId)) {
+            return selected;
         }
-        return null;
+
+        return options
+                .stream()
+                .filter(obj -> obj.getExternalId().equals(selectedId))
+                .findAny()
+                .orElseGet(() -> {
+                    T defaultValue = defaultSupplier.get();
+                    setSelectedId.accept(defaultValue == null ? "" : defaultValue.getExternalId());
+                    return defaultValue;
+                });
     }
 
-    public DegreeCurricularPlan getMostRecentDegreeCurricularPlan() {
-        return getDegree().getMostRecentDegreeCurricularPlan();
+    public DegreeCurricularPlan getDegreeCurricularPlan() {
+        this.selectedDegreeCurricularPlan = getLazySelectedObjectFromOptions(
+                this.selectedDegreeCurricularPlan,
+                getDegreeCurricularPlanID(),
+                getDegreeCurricularPlanOptions(),
+                this::getMostRecentDegreeCurricularPlan,
+                this::setDegreeCurricularPlanID
+        );
+        return this.selectedDegreeCurricularPlan;
     }
 
     public ExecutionSemester getExecutionPeriod() {
-        final DegreeCurricularPlan degreeCurricularPlan = getDegreeCurricularPlan();
-        final String executionPeriodID = getExecutionPeriodID();
-        if (degreeCurricularPlan != null && executionPeriodID != null) {
-            for (final ExecutionDegree executionDegree : degreeCurricularPlan.getExecutionDegreesSet()) {
-                final ExecutionYear executionYear = executionDegree.getExecutionYear();
-                for (final ExecutionSemester executionSemester : executionYear.getExecutionPeriodsSet()) {
-                    if (executionSemester.getExternalId().equals(executionPeriodID)) {
-                        return executionSemester;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    private boolean contains(final List<SelectItem> executionPeriodSelectItems, final String integer) {
-        for (final SelectItem selectItem : executionPeriodSelectItems) {
-            if (selectItem.getValue().equals(integer)) {
-                return true;
-            }
-        }
-        return false;
+        this.selectedExecutionSemester = getLazySelectedObjectFromOptions(
+                this.selectedExecutionSemester,
+                getExecutionPeriodID(),
+                getExecutionSemesterOptions(),
+                this::getCurrentOrMostRecentExecutionPeriod,
+                this::setExecutionPeriodID
+        );
+        return this.selectedExecutionSemester;
     }
 
     public CurricularYear getCurricularYear() {
-        final String curricularYearID = getCurricularYearID();
-        if (!Strings.isNullOrEmpty(curricularYearID)) {
-            return FenixFramework.getDomainObject(curricularYearID);
-        } else {
-            return null;
+        this.selectedCurricularYear = getLazySelectedObjectFromOptions(
+                this.selectedCurricularYear,
+                getCurricularYearID(),
+                getCurricularYearOptions(),
+                () -> null,
+                this::setCurricularYearID
+        );
+        return this.selectedCurricularYear;
+    }
+
+    private DegreeCurricularPlan getMostRecentDegreeCurricularPlan() {
+        return getDegree().getMostRecentDegreeCurricularPlan();
+    }
+
+    private ExecutionSemester getCurrentOrMostRecentExecutionPeriod() {
+        ExecutionSemester currentExecutionPeriod = ExecutionSemester.readActualExecutionSemester();
+        ExecutionDegree currentExecutionDegree = getDegreeCurricularPlan()
+                .getExecutionDegreeByAcademicInterval(currentExecutionPeriod.getExecutionYear().getAcademicInterval());
+
+        if (currentExecutionDegree == null) {
+            return getMostRecentExecutionPeriod();
         }
+        return currentExecutionPeriod;
     }
 
     public ExecutionSemester getMostRecentExecutionPeriod() {
@@ -191,30 +254,25 @@ public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBe
     }
 
     public List<SelectItem> getDegreeCurricularPlanSelectItems() {
-        return getDegree().getActiveDegreeCurricularPlans().stream()
-                .sorted(DegreeCurricularPlan.COMPARATOR_BY_PRESENTATION_NAME)
+        return getDegreeCurricularPlanOptions().stream()
                 .map(degreeCurricularPlan -> new SelectItem(degreeCurricularPlan.getExternalId(), degreeCurricularPlan.getPresentationName()))
                 .collect(Collectors.toList());
     }
 
     public List<SelectItem> getExecutionPeriodSelectItems() {
-        final DegreeCurricularPlan degreeCurricularPlan = getDegreeCurricularPlan();
-        return degreeCurricularPlan.getExecutionDegreesSet().stream()
-                .flatMap(degree -> degree.getExecutionYear().getExecutionPeriodsSet().stream())
-                .sorted(ExecutionSemester.COMPARATOR_BY_SEMESTER_AND_YEAR.reversed())
+        return getExecutionSemesterOptions().stream()
                 .map(period -> new SelectItem(period.getExternalId(), period.getQualifiedName()))
                 .collect(Collectors.toList());
     }
 
     public List<SelectItem> getCurricularYearSelectItems() {
-        return IntStream.rangeClosed(1, getDegreeCurricularPlan().getDurationInYears())
-                .boxed()
-                .map(curricularYear -> new SelectItem(curricularYear, String.valueOf(curricularYear)))
+        return getCurricularYearOptions().stream()
+                .map(curricularYear -> new SelectItem(curricularYear.getExternalId(), String.valueOf(curricularYear.getYear())))
                 .collect(Collectors.toList());
     }
 
     public List<CalendarLink> getCalendarLinks() {
-        List<CalendarLink> calendarLinks = new ArrayList<CalendarLink>();
+        List<CalendarLink> calendarLinks = new ArrayList<>();
 
         final DegreeCurricularPlan degreeCurricularPlan = getDegreeCurricularPlan();
         final CurricularYear curricularYear = getCurricularYear();
@@ -232,20 +290,21 @@ public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBe
                                     final WrittenEvaluation writtenEvaluation = (WrittenEvaluation) evaluation;
                                     CalendarLink calendarLink =
                                             new CalendarLink(executionCourse, writtenEvaluation, I18N.getLocale());
+                                    calendarLink.setAsLink(false);
                                     calendarLinks.add(calendarLink);
                                     calendarLink.setLinkParameters(constructLinkParameters(executionCourse));
                                 }
 
                             } else if (evaluation instanceof Project) {
                                 final Project project = (Project) evaluation;
-                                CalendarLink calendarLinkBegin = new CalendarLink();
+                                CalendarLink calendarLinkBegin = new CalendarLink(false);
                                 calendarLinks.add(calendarLinkBegin);
                                 calendarLinkBegin.setObjectOccurrence(project.getBegin());
                                 calendarLinkBegin.setObjectLinkLabel(constructCalendarPresentation(executionCourse, project,
                                         project.getBegin(), messages.getMessage("label.evaluation.project.begin")));
                                 calendarLinkBegin.setLinkParameters(constructLinkParameters(executionCourse));
 
-                                CalendarLink calendarLinkEnd = new CalendarLink();
+                                CalendarLink calendarLinkEnd = new CalendarLink(false);
                                 calendarLinks.add(calendarLinkEnd);
                                 calendarLinkEnd.setObjectOccurrence(project.getEnd());
                                 calendarLinkEnd.setObjectLinkLabel(constructCalendarPresentation(executionCourse, project,
@@ -262,7 +321,7 @@ public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBe
     }
 
     private Map<String, String> constructLinkParameters(final ExecutionCourse executionCourse) {
-        final Map<String, String> linkParameters = new HashMap<String, String>();
+        final Map<String, String> linkParameters = new HashMap<>();
         linkParameters.put("method", "evaluations");
         linkParameters.put("executionCourseID", executionCourse.getExternalId());
         return linkParameters;
@@ -285,20 +344,29 @@ public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBe
         return getRequest().getContextPath();
     }
 
-    public void setCurricularYearID(String curricularYearID) {
-        this.curricularYearID = curricularYearID;
-    }
-
-    public void setDegreeCurricularPlanID(String degreeCurricularPlanID) {
-        this.degreeCurricularPlanID = degreeCurricularPlanID;
-    }
-
     public void setDegreeID(String degreeID) {
         this.degreeID = degreeID;
     }
 
+    public void setDegreeCurricularPlanID(String degreeCurricularPlanID) {
+        this.getViewState().setAttribute("degreeCurricularPlanID", degreeCurricularPlanID);
+    }
+
+    public void resetExecutionPeriodAndCurricularYear(ValueChangeEvent event) {
+        this.getViewState().removeAttribute("executionPeriodID");
+        this.getViewState().removeAttribute("curricularYearID");
+        this.selectedExecutionSemester = null;
+        this.executionSemesterOptions = null;
+        this.selectedCurricularYear = null;
+        this.curricularYearOptions = null;
+    }
+
     public void setExecutionPeriodID(String executionPeriodID) {
-        this.executionPeriodID = executionPeriodID;
+        this.getViewState().setAttribute("executionPeriodID", executionPeriodID);
+    }
+
+    public void setCurricularYearID(String curricularYearID) {
+        this.getViewState().setAttribute("curricularYearID", curricularYearID);
     }
 
     public Date getBeginDate() {
@@ -312,8 +380,8 @@ public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBe
                 .findAny()
                 .flatMap(executionDegree ->
                         executionDegree.getPeriods(OccupationPeriodType.LESSONS, executionSemester.getSemester())
-                        .map(OccupationPeriod::getStart)
-                        .min(Comparator.naturalOrder())
+                                .map(OccupationPeriod::getStart)
+                                .min(Comparator.naturalOrder())
                 )
                 .orElseGet(executionSemester::getBeginDate);
     }
@@ -329,9 +397,9 @@ public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBe
                 .findAny()
                 .flatMap(executionDegree ->
                         executionDegree.getPeriods(OccupationPeriodType.EXAMS, executionSemester.getSemester())
-                        .map(OccupationPeriod::getLastOccupationPeriodOfNestedPeriods)
-                        .map(OccupationPeriod::getEnd)
-                        .max(Comparator.naturalOrder())
+                                .map(OccupationPeriod::getLastOccupationPeriodOfNestedPeriods)
+                                .map(OccupationPeriod::getEnd)
+                                .max(Comparator.naturalOrder())
                 )
                 .orElseGet(executionSemester::getEndDate);
     }

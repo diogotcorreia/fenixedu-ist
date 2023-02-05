@@ -32,6 +32,8 @@
 	<f:loadBundle basename="resources/EnumerationResources" var="bundleEnum"/>
 
 	<h:form>
+		<fc:viewState binding="#{evaluationsForDelegates.viewState}"/>
+
 		<h:outputText escape="false" value="<input alt='input.degreeID' id='degreeID' name='degreeID' type='hidden' value='#{evaluationsForDelegates.degreeID}'/>"/>
 
 		<h:outputText value="<h2>" escape="false"/>
@@ -45,7 +47,7 @@
 				<h:outputText value="#{delegatesBundle['label.delegates.evaluations.curricularPlan']}: "/>
 				<h:panelGroup>
 					<h:selectOneMenu id="degreeCurricularPlanID" value="#{evaluationsForDelegates.degreeCurricularPlanID}"
-							onchange="this.form.submit();">
+							onchange="this.form.submit();" valueChangeListener="#{evaluationsForDelegates.resetExecutionPeriodAndCurricularYear}">
 						<f:selectItems value="#{evaluationsForDelegates.degreeCurricularPlanSelectItems}"/>
 					</h:selectOneMenu>
 				</h:panelGroup>
@@ -73,7 +75,6 @@
 		 	<fc:fenixCalendar
 			 		begin="#{evaluationsForDelegates.beginDate}"
 			 		end="#{evaluationsForDelegates.endDate}"
-			 		editLinkPage="#{evaluationsForDelegates.applicationContext}/publico/executionCourse.do"
 			 		editLinkParameters="#{evaluationsForDelegates.calendarLinks}"/>
 		</h:panelGroup>
 	</h:form>
