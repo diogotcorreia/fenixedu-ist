@@ -34,8 +34,6 @@
 	<h:form>
 		<fc:viewState binding="#{evaluationsForDelegates.viewState}"/>
 
-		<h:outputText escape="false" value="<input alt='input.degreeID' id='degreeID' name='degreeID' type='hidden' value='#{evaluationsForDelegates.degreeID}'/>"/>
-
 		<h:outputText value="<h2>" escape="false"/>
 		<h:outputText value="#{delegatesBundle['label.delegates.degreeEvaluations']}"/>
 		<h:outputText value="</h2>" escape="false"/>

@@ -27,7 +27,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -57,8 +56,8 @@ import org.fenixedu.academic.util.Bundle;
 import org.fenixedu.academic.util.PeriodState;
 import org.fenixedu.commons.i18n.I18N;
 
+import pt.ist.fenixedu.delegates.domain.student.Delegate;
 import pt.ist.fenixframework.DomainObject;
-import pt.ist.fenixframework.FenixFramework;
 
 public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBean {
 
@@ -66,7 +65,6 @@ public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBe
 
     private static final DateFormat hourFormat = new SimpleDateFormat("HH:mm");
 
-    private String degreeID;
     private Degree degree;
 
     private Collection<DegreeCurricularPlan> degreeCurricularPlanOptions;
@@ -79,10 +77,6 @@ public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBe
 
     private String getViewStateAttribute(String attributeName) {
         return (String) getViewState().getAttribute(attributeName);
-    }
-
-    public String getDegreeID() {
-        return (degreeID == null) ? degreeID = getAndHoldStringParameter("degreeID") : degreeID;
     }
 
     public String getDegreeCurricularPlanID() {
@@ -143,7 +137,11 @@ public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBe
 
     public Degree getDegree() {
         if (degree == null) {
-            degree = FenixFramework.getDomainObject(getDegreeID());
+            degree = getUserView().getDelegatesSet().stream()
+                    .filter(Delegate::isActive)
+                    .map(Delegate::getDegree)
+                    .findFirst()
+                    .orElse(null);
         }
         return degree;
     }
@@ -342,10 +340,6 @@ public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBe
 
     public String getApplicationContext() {
         return getRequest().getContextPath();
-    }
-
-    public void setDegreeID(String degreeID) {
-        this.degreeID = degreeID;
     }
 
     public void setDegreeCurricularPlanID(String degreeCurricularPlanID) {

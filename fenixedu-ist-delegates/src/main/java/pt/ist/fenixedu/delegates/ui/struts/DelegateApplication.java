@@ -18,9 +18,6 @@
  */
 package pt.ist.fenixedu.delegates.ui.struts;
 
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -54,10 +51,9 @@ public class DelegateApplication {
                 HttpServletResponse response) throws Exception {
 
             User user = Authenticate.getUser();
-            Set<Delegate> activeDelegates = user.getDelegatesSet().stream().filter(d -> d.isActive()).collect(Collectors.toSet());
-            if (activeDelegates.size() > 0) {
-                return new ActionForward("/evaluationsForDelegates.faces?degreeID="
-                        + activeDelegates.iterator().next().getDegree().getExternalId());
+            long activeDelegatesCount = user.getDelegatesSet().stream().filter(Delegate::isActive).count();
+            if (activeDelegatesCount > 0) {
+                return new ActionForward("/evaluationsForDelegates.faces");
             }
             return null;
         }
