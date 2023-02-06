@@ -298,15 +298,15 @@ public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBe
                                 CalendarLink calendarLinkBegin = new CalendarLink(false);
                                 calendarLinks.add(calendarLinkBegin);
                                 calendarLinkBegin.setObjectOccurrence(project.getBegin());
-                                calendarLinkBegin.setObjectLinkLabel(constructCalendarPresentation(executionCourse, project,
-                                        project.getBegin(), messages.getMessage("label.evaluation.project.begin")));
+                                calendarLinkBegin.setObjectLinkLabel(constructCalendarPresentation(executionCourse,
+                                        project.getBegin(), messages.getMessage(I18N.getLocale(), "label.evaluation.project.begin")));
                                 calendarLinkBegin.setLinkParameters(constructLinkParameters(executionCourse));
 
                                 CalendarLink calendarLinkEnd = new CalendarLink(false);
                                 calendarLinks.add(calendarLinkEnd);
                                 calendarLinkEnd.setObjectOccurrence(project.getEnd());
-                                calendarLinkEnd.setObjectLinkLabel(constructCalendarPresentation(executionCourse, project,
-                                        project.getEnd(), messages.getMessage("label.evaluation.project.end")));
+                                calendarLinkEnd.setObjectLinkLabel(constructCalendarPresentation(executionCourse,
+                                        project.getEnd(), messages.getMessage(I18N.getLocale(), "label.evaluation.project.end")));
                                 calendarLinkEnd.setLinkParameters(constructLinkParameters(executionCourse));
                             }
                         }
@@ -325,10 +325,9 @@ public class EvaluationsForDelegatesConsultingBackingBean extends FenixBackingBe
         return linkParameters;
     }
 
-    private String constructCalendarPresentation(final ExecutionCourse executionCourse, final Project project, final Date time,
-            final String tail) {
+    private String constructCalendarPresentation(final ExecutionCourse executionCourse, final Date time, final String tail) {
         final StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(messages.getMessage("label.evaluation.shortname.project"));
+        stringBuilder.append(messages.getMessage(I18N.getLocale(), "label.evaluation.shortname.project"));
         stringBuilder.append(" ");
         stringBuilder.append(executionCourse.getSigla());
         stringBuilder.append(" (");
